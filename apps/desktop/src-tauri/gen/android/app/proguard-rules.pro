@@ -34,6 +34,7 @@
     public void setReaderPageKeyCapture(boolean);
     public void setReaderKeepAwake(boolean);
     public void setLockCover(java.lang.String, java.lang.String);
+    public java.lang.String openInSystemReader(java.lang.String, java.lang.String, java.lang.String);
     public void startBookPick(int);
     public java.lang.String takeBookPickResult();
 }

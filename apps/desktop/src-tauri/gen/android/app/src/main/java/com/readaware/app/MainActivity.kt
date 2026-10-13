@@ -2,6 +2,7 @@ package com.readaware.app
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -24,6 +25,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import java.io.File
+import org.json.JSONObject
 
 class MainActivity : TauriActivity() {
   override fun attachBaseContext(newBase: Context) {
@@ -295,6 +297,37 @@ class MainActivity : TauriActivity() {
     ) {
       openPackageInstaller(File(apkPath))
     }
+  }
+
+  /**
+   * E-Ink Center applies DPI and font scale while the app is open. Those are
+   * listed in configChanges so the activity — and the book on screen — stay
+   * up. The WebView keeps its page; a later cold start picks up the new
+   * density because [OnyxDisplay] does not override the 280–350 band.
+   */
+  override fun onConfigurationChanged(newConfig: Configuration) {
+    super.onConfigurationChanged(newConfig)
+    if (!OnyxEink.isDevice) return
+    val metrics = resources.displayMetrics
+    Log.i(
+      "ReadAwareDisplay",
+      "configChanged densityDpi=${metrics.densityDpi} fontScale=${newConfig.fontScale} band=${OnyxDisplay.DPI_MIN}-${OnyxDisplay.DPI_MAX}",
+    )
+    findViewById<View>(android.R.id.content)?.let { OnyxEink.onResume(it) }
+    markEinkDocument()
+  }
+
+  /** Copy the open book to public storage and start NeoReader. See [OnyxSystemReader]. */
+  fun openInSystemReader(sourcePath: String, fileName: String, mime: String): String {
+    return OnyxSystemReader.begin(this, sourcePath, fileName, mime, ::dispatchSystemReaderStatus)
+  }
+
+  fun dispatchSystemReaderStatus(status: String) {
+    val quoted = JSONObject.quote(status)
+    findWebView(findViewById(android.R.id.content))?.evaluateJavascript(
+      "window.dispatchEvent(new CustomEvent('ra-system-reader',{detail:$quoted}));",
+      null,
+    )
   }
 
   private fun openPackageInstaller(apk: File): String {

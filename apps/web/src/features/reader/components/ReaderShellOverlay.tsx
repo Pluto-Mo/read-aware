@@ -3,7 +3,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, type CSSProperties,
 import { useReaderFocusTarget } from "../hooks/useReaderFocusTarget";
 import { useAtomValue } from "jotai";
 import type { ReadingModeSnapshot } from "@read-aware/core";
-import { CaretLeft, ChatCircle, ListBullets, ListChecks, Notebook, TextAa } from "@phosphor-icons/react";
+import { BookOpen, CaretLeft, ChatCircle, ListBullets, ListChecks, Notebook, TextAa } from "@phosphor-icons/react";
 import { cn } from "@read-aware/ui/cn";
 import { useEinkDocument } from "@read-aware/ui/media";
 import { useReaderResponsiveLayout } from "../hooks/useReaderResponsiveLayout";
@@ -19,6 +19,7 @@ import {
   type VirtualRowsHandle,
 } from "@read-aware/ui";
 import { describeError, formatPercent, useLocale, useTranslation } from "../../../i18n";
+import { openInSystemReader } from "../../../platform/system-reader";
 import { createLogger } from "../../../platform/logger";
 import { ChatPanel } from "../../ai/components/ChatPanel";
 import { useBookAnnotations } from "../../annotations/hooks/useBookAnnotations";
@@ -321,6 +322,33 @@ export function ReaderShellOverlay({
     .map(toOverflowEntry)
     .filter((entry): entry is MenuOverflowEntry => entry !== null);
 
+  const systemReaderBusy = useRef(false);
+  const openSystemReader = () => {
+    if (systemReaderBusy.current || book.format === "virtual") return;
+    systemReaderBusy.current = true;
+    void openInSystemReader({ bookId: book.id, fileName: book.fileName, mimeType: book.mimeType })
+      .then((status) => {
+        if (status === "opened") return;
+        const description =
+          status === "missing"
+            ? t("openInSystemReaderMissing")
+            : status === "unavailable"
+              ? t("openInSystemReaderUnavailable")
+              : t("openInSystemReaderFailed");
+        log.error("system reader handoff", status);
+        toast({ variant: "destructive", description });
+      })
+      .catch((error: unknown) => {
+        log.error("system reader handoff failed", error);
+        toast({
+          variant: "destructive",
+          description: t("openInSystemReaderFailed"),
+        });
+      })
+      .finally(() => {
+        systemReaderBusy.current = false;
+      });
+  };
   const removeAnnotationReporting = (id: string) =>
     void removeAnnotation(id).catch((error) => {
       log.error("failed to remove annotation", error);
@@ -729,6 +757,16 @@ export function ReaderShellOverlay({
                   </span>
                 ) : null;
               })}
+              {eink && book.format !== "virtual" && (
+                <Tooltip content={t("openInSystemReader")} side="bottom" className="pointer-events-auto">
+                  <IconButton
+                    size="sm"
+                    label={t("openInSystemReader")}
+                    onClick={openSystemReader}
+                    icon={<BookOpen size={18} weight="regular" aria-hidden="true" />}
+                  />
+                </Tooltip>
+              )}
               <MenuOverflow entries={readerOverflowEntries} className="pointer-events-auto" />
             </div>
           )}
