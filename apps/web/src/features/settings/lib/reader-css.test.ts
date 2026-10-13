@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { DEFAULT_READER_SETTINGS, type ReaderParagraphSpacing } from "./reader-settings";
 import { BUILTIN_READER_PALETTES } from "./reader-theme";
-import { buildReaderContentCss, getReaderPreviewStyle } from "./reader-css";
+import { buildReaderContentCss, getReaderPreviewStyle, readerLayoutSpacing } from "./reader-css";
 
 describe("buildReaderContentCss", () => {
   const build = (fontFaceCss?: string) =>
@@ -91,6 +91,26 @@ describe("buildReaderContentCss", () => {
     expect(css).toContain('aside[role~="doc-footnote"]');
     // Section-level notes are whole endnote pages — they must stay visible.
     expect(css).not.toContain("section[epub|type");
+  });
+});
+
+describe("readerLayoutSpacing", () => {
+  test("keeps the desktop page clearance", () => {
+    expect(readerLayoutSpacing("narrow", "paginated-single").margin).toBe("48px");
+  });
+
+  test("tightens vertical clearance on an e-ink panel", () => {
+    const host = globalThis as { document?: { documentElement: { dataset: { eink?: string } } } };
+    const previous = host.document;
+    host.document = { documentElement: { dataset: { eink: "1" } } };
+    try {
+      expect(readerLayoutSpacing("narrow", "paginated-single")).toMatchObject({
+        margin: "12px",
+        gap: "3%",
+      });
+    } finally {
+      host.document = previous;
+    }
   });
 });
 

@@ -33,6 +33,7 @@
     public void setVolumeKeyCapture(boolean);
     public void setReaderPageKeyCapture(boolean);
     public void setReaderKeepAwake(boolean);
+    public void setLockCover(java.lang.String, java.lang.String);
     public void startBookPick(int);
     public java.lang.String takeBookPickResult();
 }

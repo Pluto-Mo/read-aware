@@ -143,6 +143,86 @@ pub fn store_cover(
     )
 }
 
+/// Raster plus title for an Onyx standby image. `source_path` is empty when
+/// the book has no decodable cover (SVG included); the shell draws `title`.
+pub struct PreparedLockCover {
+    pub source_path: String,
+    pub title: String,
+}
+
+/// Copy the book's cover to `data_dir/onyx-lock-cover.bin` for the Android
+/// shell. The file is app-private; the shell republishes a panel-sized PNG
+/// the system process can read. `None` when `book_id` is not a book key.
+pub fn prepare_lock_cover(
+    conn: &Connection,
+    data_dir: &Path,
+    book_id: &str,
+) -> Result<Option<PreparedLockCover>, CommandError> {
+    if book_id.is_empty()
+        || !book_id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+    {
+        return Ok(None);
+    }
+    let row: Option<(String, Option<String>, Option<String>)> = conn
+        .query_row(
+            "SELECT title, cover_status, cover_blob_key FROM books WHERE id=?1",
+            [book_id],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .optional()?;
+    let Some((title, status, key)) = row else {
+        return Ok(None);
+    };
+    let title: String = title.chars().take(120).collect();
+    let dest = data_dir.join("onyx-lock-cover.bin");
+    let bytes = lock_cover_bytes(conn, data_dir, status.as_deref(), key.as_deref());
+    let source_path = if bytes.is_empty() {
+        let _ = std::fs::remove_file(&dest);
+        String::new()
+    } else {
+        std::fs::write(&dest, &bytes).map_err(|error| {
+            log::warn!("lock cover write failed: {error}");
+            CommandError::internal("failed to stage the lock-screen cover")
+        })?;
+        dest.to_string_lossy().into_owned()
+    };
+    Ok(Some(PreparedLockCover { source_path, title }))
+}
+
+fn lock_cover_bytes(
+    conn: &Connection,
+    data_dir: &Path,
+    status: Option<&str>,
+    key: Option<&str>,
+) -> Vec<u8> {
+    if status != Some("ready") {
+        return Vec::new();
+    }
+    let Some(key) = key else {
+        return Vec::new();
+    };
+    let Ok(Some((path, info))) = get_blob_record_inner(conn, data_dir, key) else {
+        return Vec::new();
+    };
+    let raw = match std::fs::read(&path) {
+        Ok(bytes) => bytes,
+        Err(error) => {
+            log::warn!("lock cover read failed: {error}");
+            return Vec::new();
+        }
+    };
+    let mime = info.mime_type.unwrap_or_default();
+    if mime == "image/svg+xml"
+        || image_mime(&raw) == Some("image/svg+xml")
+        || raw.len() > 2 * 1024 * 1024
+    {
+        return Vec::new();
+    }
+    raw
+}
+
 /// Decode a `data:<mime>;base64,<payload>` cover (the pre-blob storage form).
 pub fn cover_from_data_url(data_url: &str) -> Option<CoverImage> {
     use base64::{engine::general_purpose::STANDARD, Engine as _};

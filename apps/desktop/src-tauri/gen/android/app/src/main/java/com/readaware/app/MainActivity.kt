@@ -1,9 +1,11 @@
 package com.readaware.app
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.DisplayMetrics
 import android.provider.Settings
 import android.util.Log
 import android.view.KeyEvent
@@ -24,6 +26,11 @@ import androidx.webkit.WebViewFeature
 import java.io.File
 
 class MainActivity : TauriActivity() {
+  override fun attachBaseContext(newBase: Context) {
+    // Before the WebView is created, so CSS pixels follow the measured panel.
+    super.attachBaseContext(if (OnyxEink.isDevice) OnyxDisplay.wrap(newBase) else newBase)
+  }
+
   companion object {
     /** Classic requestCode for the book picker — distinct from the
      *  ActivityResult launchers Tauri's PluginManager registers. */
@@ -207,6 +214,33 @@ class MainActivity : TauriActivity() {
       if (awake) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
       else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
+  }
+
+  /**
+   * Publish the open book's cover as the BOOX standby image. Called from Rust
+   * (`set_onyx_lock_cover`) when a book opens and again if its cover arrives
+   * later. [sourcePath] is an app-private raster (empty when the book has no
+   * decodable cover — the shell draws [title] instead). No-op off Onyx.
+   * Closing the book does not clear the image: the ROM cannot restore the
+   * previous screensaver.
+   */
+  fun setLockCover(sourcePath: String, title: String) {
+    if (!OnyxEink.isDevice) return
+    val (width, height) = panelPixels()
+    OnyxLockCover.publish(this, sourcePath, title, width, height)
+  }
+
+  private fun panelPixels(): Pair<Int, Int> {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      val mode = display?.mode
+      if (mode != null && mode.physicalWidth > 0 && mode.physicalHeight > 0) {
+        return mode.physicalWidth to mode.physicalHeight
+      }
+    }
+    val metrics = DisplayMetrics()
+    @Suppress("DEPRECATION")
+    windowManager.defaultDisplay.getRealMetrics(metrics)
+    return metrics.widthPixels to metrics.heightPixels
   }
 
   /** Current Android build number, used to reject non-upgrade release APKs. */
@@ -563,9 +597,16 @@ class MainActivity : TauriActivity() {
     )
   }
 
-  /** Stamp the e-ink flag once the document exists. Retried until it does. */
+  /** Stamp the e-ink flag once the document exists, plus the density the shell measured. */
   private fun markEinkDocument() {
-    val js = "document.documentElement&&(document.documentElement.dataset.eink='1');"
+    val density = OnyxDisplay.appliedDensityDpi
+    val ppi = OnyxDisplay.physicalPpi
+    val js = buildString {
+      append("document.documentElement&&(document.documentElement.dataset.eink='1'")
+      if (density > 0) append(",document.documentElement.dataset.einkDensity='$density'")
+      if (ppi > 0) append(",document.documentElement.dataset.einkPpi='$ppi'")
+      append(");")
+    }
     val root = findViewById<View>(android.R.id.content) ?: return
     fun attempt(left: Int) {
       val webView = findWebView(root)

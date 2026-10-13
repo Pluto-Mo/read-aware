@@ -314,6 +314,65 @@ async fn set_reader_keep_awake(app: tauri::AppHandle, awake: bool) -> Result<(),
 #[tauri::command]
 fn set_reader_keep_awake(_awake: bool) {}
 
+/// Publish the open book's cover as the Onyx standby image. The activity
+/// no-ops on other devices. Off Android the command is a no-op. Closing the
+/// book does not clear the image — the ROM has no API to restore the previous
+/// screensaver.
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn set_onyx_lock_cover(app: tauri::AppHandle, book_id: String) -> Result<(), CommandError> {
+    let app_for_load = app.clone();
+    let prepared = crate::storage::blocking("set_onyx_lock_cover", move || {
+        let db = app_for_load.state::<crate::storage::Db>();
+        let data_dir = app_for_load.state::<crate::storage::DataDir>();
+        let conn = db.0.lock()?;
+        covers::prepare_lock_cover(&conn, &data_dir.0, &book_id)
+    })
+    .await?;
+    let Some(prepared) = prepared else {
+        return Ok(());
+    };
+    on_main_thread(&app, move || {
+        use tao::platform::android::prelude::main_android_context;
+        let Some(ctx) = main_android_context() else {
+            log::warn!("setLockCover: no android context yet");
+            return;
+        };
+        let Ok(vm) = (unsafe { jni::JavaVM::from_raw(ctx.java_vm.cast()) }) else {
+            return;
+        };
+        let Ok(mut env) = vm.attach_current_thread() else {
+            return;
+        };
+        let activity = unsafe { jni::objects::JObject::from_raw(ctx.context_jobject.cast()) };
+        let Ok(path) = env.new_string(&prepared.source_path) else {
+            return;
+        };
+        let Ok(title) = env.new_string(&prepared.title) else {
+            return;
+        };
+        let path_object = jni::objects::JObject::from(path);
+        let title_object = jni::objects::JObject::from(title);
+        if let Err(err) = env.call_method(
+            &activity,
+            "setLockCover",
+            "(Ljava/lang/String;Ljava/lang/String;)V",
+            &[
+                jni::objects::JValue::Object(&path_object),
+                jni::objects::JValue::Object(&title_object),
+            ],
+        ) {
+            log::error!("setLockCover JNI call failed: {err}");
+            let _ = env.exception_clear();
+        }
+    })
+    .await
+}
+
+#[cfg(not(target_os = "android"))]
+#[tauri::command]
+fn set_onyx_lock_cover(_book_id: String) {}
+
 /// Move the Android task to the background (like pressing Home), keeping the
 /// process — and the loaded book — warm for an instant return. The web layer
 /// calls this when the back button unwinds past the shelf root; letting the
@@ -1263,6 +1322,7 @@ pub fn run() {
             set_volume_key_capture,
             set_reader_page_key_capture,
             set_reader_keep_awake,
+            set_onyx_lock_cover,
             storefront::app_store_storefront,
             move_task_to_back,
             book_pick_start,
