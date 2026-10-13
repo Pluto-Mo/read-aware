@@ -33,3 +33,15 @@ export function setReaderKeepAwake(awake: boolean): void {
     // Older shell builds without the command.
   });
 }
+
+/**
+ * Ask an Onyx device to use this book's cover as the standby / lock image.
+ * No-op off Android. The shell no-ops on devices that are not Onyx, and
+ * leaves the last image in place when the reader closes.
+ */
+export function setOnyxLockCover(bookId: string): void {
+  if (!isTauri() || !isAndroid()) return;
+  void invoke("set_onyx_lock_cover", { bookId }).catch(() => {
+    // Older shell builds without the command.
+  });
+}

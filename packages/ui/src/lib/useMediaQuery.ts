@@ -28,10 +28,11 @@ export function useMediaQuery(query: string): boolean {
 export const PHONE_VIEWPORT_QUERY = "(max-width: 47.9375rem)";
 
 /**
- * Compact chrome for a 7" e-ink panel. Leaf 5 is 1680×1264 at ~300dpi, so
- * landscape is about 896 CSS pixels — past the phone breakpoint, still too
- * narrow for desktop reader chrome. 60rem (960px) covers both orientations.
- * Only consulted when the document is marked `data-eink`.
+ * Exclusive sheets (not docked columns) while an e-ink panel's CSS width is
+ * still under 60rem. The Onyx shell may retarget density, so this is not a
+ * fixed 896px assumption. Only consulted when the document is marked
+ * `data-eink`. The reader does not use the phone bottom toolbar on that
+ * panel; see ReaderShellOverlay.
  */
 export const EINK_COMPACT_QUERY = "(max-width: 60rem)";
 
@@ -68,4 +69,16 @@ function subscribeCompactViewport(onChange: () => void): () => void {
  */
 export function usePhoneViewport(): boolean {
   return useSyncExternalStore(subscribeCompactViewport, isCompactViewport, () => false);
+}
+
+function subscribeEinkFlag(onChange: () => void): () => void {
+  if (typeof document === "undefined") return () => {};
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-eink"] });
+  return () => observer.disconnect();
+}
+
+/** True after the Onyx shell has set `data-eink`. False everywhere else. */
+export function useEinkDocument(): boolean {
+  return useSyncExternalStore(subscribeEinkFlag, isEinkDocument, () => false);
 }

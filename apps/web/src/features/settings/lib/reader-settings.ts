@@ -252,10 +252,13 @@ export const DEFAULT_READER_SETTINGS: ReaderSettings = {
   // Warm paper dithers on a 16-level panel; a white page stays clean.
   theme: einkDefaults ? "light" : "warm",
   fontFamily: "curated:inter",
-  fontSize: "medium",
+  // The Onyx shell retargets density so "medium" (17px) is about 11pt. One
+  // step up is a comfortable first-run body on a 7" panel held at arm's length.
+  fontSize: einkDefaults ? "large" : "medium",
   // Onyx's e-ink guide asks for a heavier body face so strokes survive REGAL.
   fontWeight: einkDefaults ? "medium" : "regular",
-  lineSpacing: "comfortable",
+  // 1.85 leaves few lines on a short landscape page. 1.55 matches a native reader.
+  lineSpacing: einkDefaults ? "compact" : "comfortable",
   paragraphSpacing: "normal",
   textAlign: "book",
   // Touch screens read with mobile-typical tight margins by default; desktop

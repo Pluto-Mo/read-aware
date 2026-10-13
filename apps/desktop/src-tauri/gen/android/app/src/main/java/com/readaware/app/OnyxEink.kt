@@ -28,6 +28,7 @@ import android.webkit.WebView
  * Not applied (see the PR audit): fast/A2 animation mode, system-wide update
  * lock, front light, pen/scribble, dictionary, touch-region disable, EAC
  * toggle, legacy `hide_status_bar` broadcast, changing the device sleep timeout.
+ * Panel density is [OnyxDisplay]; the standby cover is [OnyxLockCover].
  */
 object OnyxEink {
   private const val TAG = "ReadAwareEink"

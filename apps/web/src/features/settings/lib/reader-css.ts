@@ -171,6 +171,17 @@ export function layoutForReadingMode(mode: ReadingMode): {
 export function readerLayoutSpacing(margins: ReaderPageMargins, mode: ReadingMode) {
   const spread = mode === "paginated-double";
   const preset = spread ? READER_SPREAD_MARGIN_PRESETS[margins] : READER_MARGIN_PRESETS[margins];
+  // The 48px / 4rem clearance is desktop chrome. On a 7" panel it is empty
+  // margin; the user's margin preset still sets the horizontal gap.
+  if (isEinkDocument()) {
+    return {
+      gap: preset.gap,
+      margin: spread ? "8px" : "12px",
+      bodyPadding: spread
+        ? `0.75rem ${preset.horizontalPadding} 1rem`
+        : `1rem ${preset.horizontalPadding} 1.25rem`,
+    };
+  }
   return {
     gap: preset.gap,
     margin: spread ? "20px" : "48px",

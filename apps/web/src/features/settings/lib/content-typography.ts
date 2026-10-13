@@ -21,7 +21,6 @@ import { localKV } from "../../../platform/local-store";
 import { readerFontSizeRem, resolveReaderFontStack } from "./reader-css";
 import type { PluginFontStackSource } from "./reader-css";
 import {
-  DEFAULT_READER_SETTINGS,
   type ReaderFontFamily,
   type ReaderLineSpacing,
   type ReaderSettingsPreferences,
@@ -60,12 +59,12 @@ const CONTENT_LINE_HEIGHT: Record<ReaderLineSpacing, string> = {
 };
 
 /**
- * How much smaller content runs than the book when following it. Anchored so
- * the reader's default (`medium`, 1.0625rem) lands exactly on the content
- * default (`medium`, 0.875rem) — following changes nothing until you move the
- * reading size, which is what "follow" should feel like on first run.
+ * How much smaller content runs than the book when following it. Anchored on
+ * the medium tier (1.0625rem book → 0.875rem content), not the device's
+ * first-run preset — e-ink starts at "large", and follow should still match
+ * content medium when the book is medium.
  */
-const FOLLOW_RATIO = CONTENT_FONT_SIZE_REM.medium / readerFontSizeRem(DEFAULT_READER_SETTINGS.fontSize);
+const FOLLOW_RATIO = CONTENT_FONT_SIZE_REM.medium / readerFontSizeRem("medium");
 
 /** Clamp for the followed size, so an extreme book size stays usable in chrome. */
 const FOLLOW_MIN_REM = CONTENT_FONT_SIZE_REM["x-small"];

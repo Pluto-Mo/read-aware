@@ -80,7 +80,7 @@ import { useReaderHoldMenu } from "../hooks/useReaderHoldMenu";
 import { useTextUnitHoldActions } from "../hooks/useTextUnitHoldActions";
 import { resolveDrawnRangeTap } from "../lib/content-tap";
 import { forwardKeyDownToApp, isEditableKeyTarget } from "../../../platform/app-keydown";
-import { PAGE_TURN_EVENT, setReaderKeepAwake, setReaderPageKeyCapture } from "../../../platform/page-keys";
+import { PAGE_TURN_EVENT, setOnyxLockCover, setReaderKeepAwake, setReaderPageKeyCapture } from "../../../platform/page-keys";
 import { subscribeWheelPhaseEdges } from "../../../platform/wheel-phase";
 import { useDelayedFlag } from "../hooks/useDelayedFlag";
 import { useReaderTypography } from "../hooks/useReaderTypography";
@@ -1915,6 +1915,15 @@ export function FoliateReaderView({
       setReaderKeepAwake(false);
     };
   }, []);
+
+  // BOOX captures the standby bitmap as the panel sleeps, so the cover has to
+  // be published while the book is open. Repeated when extraction finishes
+  // (`coverStatus` becomes ready). The last image stays after the reader closes.
+  useEffect(() => {
+    const id = selectedBook?.id;
+    if (!id) return;
+    setOnyxLockCover(id);
+  }, [selectedBook?.id, selectedBook?.coverStatus]);
 
   // Keep the renderer's `animated` flag in sync with the motion preference at
   // runtime (the Reduce-motion toggle flips `data-motion`; the OS pref can change
