@@ -248,15 +248,39 @@ function normalizeLanguageFonts(value: unknown): Record<string, ReaderFontPrefer
 // defaults below stay the desktop/phone split.
 const einkDefaults = isEinkDocument();
 
+/** Fresh e-ink body size. 36px on {@link readerBodyFontSize}'s e-ink ladder. */
+export const EINK_DEFAULT_FONT_SIZE: ReaderFontSize = "x-large";
+/** Fresh e-ink body weight. Inter ships this face. */
+export const EINK_DEFAULT_FONT_WEIGHT: ReaderFontWeight = "semibold";
+/**
+ * Device-local flag. Once set, a later choice of "medium" or "regular" is
+ * kept. The one-time rule, on e-ink only: stored `medium` size becomes
+ * {@link EINK_DEFAULT_FONT_SIZE}, and stored `regular` or `medium` weight
+ * becomes {@link EINK_DEFAULT_FONT_WEIGHT}.
+ */
+const EINK_READING_BUMP_KEY = "read-aware-eink-reading-bump";
+
+export function migrateEinkReading<T extends { fontSize: ReaderFontSize; fontWeight: ReaderFontWeight }>(
+  prefs: T,
+): Omit<T, "fontSize" | "fontWeight"> & { fontSize: ReaderFontSize; fontWeight: ReaderFontWeight } {
+  return {
+    ...prefs,
+    fontSize: prefs.fontSize === "medium" ? EINK_DEFAULT_FONT_SIZE : prefs.fontSize,
+    fontWeight:
+      prefs.fontWeight === "regular" || prefs.fontWeight === "medium" ? EINK_DEFAULT_FONT_WEIGHT : prefs.fontWeight,
+  };
+}
+
 export const DEFAULT_READER_SETTINGS: ReaderSettings = {
   // Warm paper dithers on a 16-level panel; a white page stays clean.
   theme: einkDefaults ? "light" : "warm",
   fontFamily: "curated:inter",
-  // The Onyx shell retargets density so "medium" (17px) is about 11pt. One
-  // step up is a comfortable first-run body on a 7" panel held at arm's length.
-  fontSize: einkDefaults ? "large" : "medium",
-  // Onyx's e-ink guide asks for a heavier body face so strokes survive REGAL.
-  fontWeight: einkDefaults ? "medium" : "regular",
+  // E-ink `x-large` is 36px on the e-ink ladder (see EINK_FONT_SIZE_MAP):
+  // above the 14sp floor, and a page size across the 280–350 dpi band.
+  fontSize: einkDefaults ? EINK_DEFAULT_FONT_SIZE : "medium",
+  // Eink guide: embed a bold face. Semibold is the real Inter face one step
+  // above the previous medium (500) default.
+  fontWeight: einkDefaults ? EINK_DEFAULT_FONT_WEIGHT : "regular",
   // 1.85 leaves few lines on a short landscape page. 1.55 matches a native reader.
   lineSpacing: einkDefaults ? "compact" : "comfortable",
   paragraphSpacing: "normal",
@@ -366,10 +390,10 @@ export function normalizeFontWeight(value: unknown): ReaderFontWeight {
 export function getReaderPreferences(): ReaderSettingsPreferences {
   try {
     const raw = localKV.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_READER_PREFERENCES;
+    if (!raw) return bumpEinkReading(DEFAULT_READER_PREFERENCES);
     const parsed = JSON.parse(raw) as Partial<ReaderSettingsPreferences>;
     const languageFonts = normalizeLanguageFonts(parsed.languageFonts);
-    return {
+    return bumpEinkReading({
       ...(languageFonts ? { languageFonts } : {}),
       theme: normalizeReaderTheme(parsed.theme),
       fontFamily: normalizeFontFamily(parsed.fontFamily),
@@ -387,10 +411,24 @@ export function getReaderPreferences(): ReaderSettingsPreferences {
         normalizeReadingMode(parsed.fixedLayoutReadingMode) ?? DEFAULT_READER_PREFERENCES.fixedLayoutReadingMode,
       fixedLayoutColor:
         parsed.fixedLayoutColor === "original" ? "original" : DEFAULT_READER_PREFERENCES.fixedLayoutColor,
-    };
+    });
   } catch {
     return DEFAULT_READER_PREFERENCES;
   }
+}
+
+/**
+ * Apply {@link migrateEinkReading} once per device. The flag is written
+ * before the preference save so a listener that re-reads does not bump again.
+ */
+function bumpEinkReading(prefs: ReaderSettingsPreferences): ReaderSettingsPreferences {
+  if (!einkDefaults || localKV.getItem(EINK_READING_BUMP_KEY) === "1") return prefs;
+  const next = migrateEinkReading(prefs);
+  localKV.setItem(EINK_READING_BUMP_KEY, "1", "local", "system");
+  if (next.fontSize !== prefs.fontSize || next.fontWeight !== prefs.fontWeight) {
+    saveReaderPreferences(next, "system");
+  }
+  return next;
 }
 
 export function saveReaderPreferences(prefs: ReaderSettingsPreferences, origin: DomainActor = "user"): void {

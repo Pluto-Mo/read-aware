@@ -51,13 +51,18 @@ object OnyxEink {
     webView.overScrollMode = View.OVER_SCROLL_NEVER
     webView.isVerticalScrollBarEnabled = false
     webView.isHorizontalScrollBarEnabled = false
+    // Eink guide: body text is not smaller than 14sp. This is the WebView
+    // floor (E-Ink Center's "webpage font size" is the same idea in the
+    // system optimizer). The reader stylesheet sets the actual book size.
+    webView.settings.minimumFontSize = 14
+    webView.settings.minimumLogicalFontSize = 14
     val contrast = invoke(webView, "setCssInjectEnabled", true)
     val regal = staticInt(VIEW_UPDATE, "UI_REGAL_MODE")
     val viewMode = if (regal != null) invoke(webView, "setDefaultUpdateMode", regal) else false
     val appRegal = staticInt(EINK_CONSTANT, "UPDATE_MODE_REGAL")
     val appMode =
       if (appRegal != null) invokeStatic(EINK_HELPER, "setAppScopeRefreshMode", appRegal) else false
-    Log.i(TAG, "prepare contrast=$contrast viewRegal=$viewMode appRegal=$appMode")
+    Log.i(TAG, "prepare contrast=$contrast viewRegal=$viewMode appRegal=$appMode minFont=14")
   }
 
   /** Count a reader page turn and schedule a full GC once the panel has settled. */

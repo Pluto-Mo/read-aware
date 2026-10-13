@@ -89,6 +89,30 @@ const FONT_SIZE_MAP = {
 } as const;
 
 /**
+ * Book sizes on an e-ink panel whose density stays in BOOX's 280–350 dpi
+ * band (1 CSS px ≈ 1sp). The phone ladder tops out at 28px, which is a small
+ * page at arm's length. This ladder's floor is 16px (above the Eink guide's
+ * 14sp minimum) and its fresh-install step, `x-large`, is 36px — about 16–19pt
+ * across that dpi band on a 300 ppi panel. Desktop and phones keep
+ * {@link FONT_SIZE_MAP}.
+ */
+const EINK_FONT_SIZE_MAP = {
+  "xx-small": "1rem",
+  "x-small": "1.125rem",
+  small: "1.375rem",
+  medium: "1.625rem",
+  large: "2rem",
+  "x-large": "2.25rem",
+  "xx-large": "2.625rem",
+  "xxx-large": "3rem",
+} as const;
+
+/** CSS font-size for the book page. E-ink uses the larger ladder. */
+export function readerBodyFontSize(fontSize: ReaderFontSize): string {
+  return (isEinkDocument() ? EINK_FONT_SIZE_MAP : FONT_SIZE_MAP)[fontSize];
+}
+
+/**
  * The numeric rem behind a reading size preset. Exposed so the app's content
  * typography can scale off the book's size when it follows it — see
  * `content-typography.ts`.
@@ -177,9 +201,7 @@ export function readerLayoutSpacing(margins: ReaderPageMargins, mode: ReadingMod
     return {
       gap: preset.gap,
       margin: spread ? "8px" : "12px",
-      bodyPadding: spread
-        ? `0.75rem ${preset.horizontalPadding} 1rem`
-        : `1rem ${preset.horizontalPadding} 1.25rem`,
+      bodyPadding: spread ? `0.75rem ${preset.horizontalPadding} 1rem` : `1rem ${preset.horizontalPadding} 1.25rem`,
     };
   }
   return {
@@ -265,7 +287,7 @@ export type ReaderContentAssets = {
 export function buildReaderContentCss(settings: ReaderSettings, assets: ReaderContentAssets): string {
   const fontFaceCss = assets.fontFaceCss ?? "";
   const fontFamily = resolveReaderFontStack(settings.fontFamily, assets.pluginFont);
-  const fontSize = FONT_SIZE_MAP[settings.fontSize];
+  const fontSize = readerBodyFontSize(settings.fontSize);
   const fontWeight = READER_FONT_WEIGHTS[resolveReaderFontWeight(settings.fontWeight, settings.fontFamily)];
   const lineHeight = LINE_HEIGHT_MAP[settings.lineSpacing];
   const paragraphSpacing = PARAGRAPH_SPACING_MAP[settings.paragraphSpacing];
@@ -667,7 +689,7 @@ export function getReaderPreviewStyle(
     backgroundColor: theme.bg,
     color: theme.text,
     fontFamily: resolveReaderFontStack(settings.fontFamily, assets.pluginFont),
-    fontSize: FONT_SIZE_MAP[settings.fontSize],
+    fontSize: readerBodyFontSize(settings.fontSize),
     fontWeight: READER_FONT_WEIGHTS[resolveReaderFontWeight(settings.fontWeight, settings.fontFamily)],
     lineHeight: LINE_HEIGHT_MAP[settings.lineSpacing],
     // The preview text is ours, so `book` — "whatever the publisher chose" —
