@@ -15,23 +15,14 @@ import android.view.KeyEvent
  * reader asked for capture, so a phone's volume rocker and keyboard focus
  * navigation stay intact.
  *
- * Leaf 5 QA: the physical previous key emits the Android "down / forward"
- * code, and the next key emits "up / back". [pageTurn] flips that once.
- * Sentence-mode volume steps are a different path and stay volume-down =
- * forward.
+ * Volume-down / page-down / d-pad-right move forward — the same direction
+ * the sentence navigator already uses for volume keys.
  */
 object ReaderKeys {
   const val NEXT = "next"
   const val PREV = "prev"
 
-  fun pageTurn(keyCode: Int, onyx: Boolean): String? = when (namedDirection(keyCode, onyx)) {
-    NEXT -> PREV
-    PREV -> NEXT
-    else -> null
-  }
-
-  /** Android's own names, before the Leaf 5 flip in [pageTurn]. */
-  private fun namedDirection(keyCode: Int, onyx: Boolean): String? {
+  fun pageTurn(keyCode: Int, onyx: Boolean): String? {
     when (keyCode) {
       KeyEvent.KEYCODE_PAGE_DOWN -> return NEXT
       KeyEvent.KEYCODE_PAGE_UP -> return PREV
