@@ -5,9 +5,11 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.activity.OnBackPressedCallback
@@ -17,6 +19,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import java.io.File
 
 class MainActivity : TauriActivity() {
@@ -44,6 +48,10 @@ class MainActivity : TauriActivity() {
    *  changing the volume. Toggled from Rust (`set_volume_key_capture`) as the
    *  navigator mode starts/stops, so media volume works normally otherwise. */
   @Volatile private var volumeKeysCaptured = false
+  /** While true, page-turn keys (and, on Onyx, volume and d-pad) turn reader
+   *  pages. Toggled from Rust (`set_reader_page_key_capture`) for the lifetime
+   *  of the reader, released while a text field is focused. */
+  @Volatile private var readerPageKeysCaptured = false
   /** APK waiting for the user to grant this app install-source permission. */
   @Volatile private var pendingUpdateApkPath: String? = null
 
@@ -104,6 +112,18 @@ class MainActivity : TauriActivity() {
       builtInZoomControls = false
       displayZoomControls = false
     }
+    if (OnyxEink.isDevice) {
+      // Before the bundle evaluates, so first-run reader defaults can see it.
+      if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+        WebViewCompat.addDocumentStartJavaScript(
+          webView,
+          "document.documentElement.dataset.eink='1';",
+          setOf("*"),
+        )
+      }
+      OnyxEink.prepareWebView(webView)
+      markEinkDocument()
+    }
   }
 
   /** Called from Rust (the `move_task_to_back` command): background the app
@@ -125,8 +145,12 @@ class MainActivity : TauriActivity() {
         controller.systemBarsBehavior =
           WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         controller.hide(WindowInsetsCompat.Type.statusBars())
+        // BOOX draws its own navigation strip. Hiding it with the status bar
+        // gives the page the full panel; a swipe still reveals both.
+        if (OnyxEink.isDevice) controller.hide(WindowInsetsCompat.Type.navigationBars())
       } else {
         controller.show(WindowInsetsCompat.Type.statusBars())
+        if (OnyxEink.isDevice) controller.show(WindowInsetsCompat.Type.navigationBars())
       }
     }
   }
@@ -144,6 +168,26 @@ class MainActivity : TauriActivity() {
   /** Called from Rust (the `set_volume_key_capture` command). */
   fun setVolumeKeyCapture(captured: Boolean) {
     volumeKeysCaptured = captured
+  }
+
+  /** Called from Rust (the `set_reader_page_key_capture` command). */
+  fun setReaderPageKeyCapture(captured: Boolean) {
+    readerPageKeysCaptured = captured
+  }
+
+  /**
+   * Called from Rust (the `set_reader_keep_awake` command) for the lifetime
+   * of an open book. On Onyx, hold the panel awake — e-ink draws almost
+   * nothing once the page is still, and the system timeout would blank it
+   * mid-chapter. Released when the reader unmounts, including while a note
+   * field has focus (page keys are released separately in that case).
+   */
+  fun setReaderKeepAwake(awake: Boolean) {
+    if (!OnyxEink.isDevice) return
+    runOnUiThread {
+      if (awake) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+      else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
   }
 
   /** Current Android build number, used to reject non-upgrade release APKs. */
@@ -187,6 +231,10 @@ class MainActivity : TauriActivity() {
 
   override fun onResume() {
     super.onResume()
+    if (OnyxEink.isDevice) {
+      findViewById<View>(android.R.id.content)?.let { OnyxEink.onResume(it) }
+      markEinkDocument()
+    }
     val apkPath = pendingUpdateApkPath ?: return
     if (
       Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
@@ -329,19 +377,59 @@ class MainActivity : TauriActivity() {
    * everything else falls through to the system.
    */
   override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+    val keyCode = event.keyCode
     val isVolumeKey =
-      event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN ||
-        event.keyCode == KeyEvent.KEYCODE_VOLUME_UP
-    if (!volumeKeysCaptured || !isVolumeKey) return super.dispatchKeyEvent(event)
-    if (event.action == KeyEvent.ACTION_DOWN) {
-      val direction = if (event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) "next" else "prev"
-      // Keep the event name in step with platform/volume-keys.ts.
-      findWebView(findViewById(android.R.id.content))?.evaluateJavascript(
-        "window.dispatchEvent(new CustomEvent('ra-volume-step', { detail: '$direction' }));",
-        null,
-      )
+      keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP
+    // Sentence mode wins the volume rocker. Page keys still turn pages.
+    if (volumeKeysCaptured && isVolumeKey) {
+      if (event.action == KeyEvent.ACTION_DOWN) dispatchReaderEvent("ra-volume-step", volumeDirection(keyCode))
+      return true
     }
-    return true
+    if (readerPageKeysCaptured) {
+      val direction = ReaderKeys.pageTurn(keyCode, OnyxEink.isDevice)
+      if (direction != null) {
+        if (event.action == KeyEvent.ACTION_DOWN) {
+          // Keep the event name in step with platform/page-keys.ts.
+          dispatchReaderEvent("ra-page-turn", direction)
+          findViewById<View>(android.R.id.content)?.let { OnyxEink.notePageTurn(it) }
+        }
+        // Consume up as well so the WebView cannot also scroll, and so the
+        // volume HUD stays hidden when the rocker is paging.
+        return true
+      }
+      // Leaf 5's case keys were not captured on hardware here. A single
+      // log line per press is enough to map an unexpected code later.
+      if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+        Log.i("ReadAwareKeys", "reader key not mapped keyCode=$keyCode scanCode=${event.scanCode}")
+      }
+    }
+    return super.dispatchKeyEvent(event)
+  }
+
+  private fun volumeDirection(keyCode: Int): String =
+    if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) ReaderKeys.NEXT else ReaderKeys.PREV
+
+  /** `detail` is one of the fixed direction tokens, never external input. */
+  private fun dispatchReaderEvent(name: String, direction: String) {
+    findWebView(findViewById(android.R.id.content))?.evaluateJavascript(
+      "window.dispatchEvent(new CustomEvent('$name', { detail: '$direction' }));",
+      null,
+    )
+  }
+
+  /** Stamp the e-ink flag once the document exists. Retried until it does. */
+  private fun markEinkDocument() {
+    val js = "document.documentElement&&(document.documentElement.dataset.eink='1');"
+    val root = findViewById<View>(android.R.id.content) ?: return
+    fun attempt(left: Int) {
+      val webView = findWebView(root)
+      if (webView != null) {
+        webView.evaluateJavascript(js, null)
+        return
+      }
+      if (left > 0) root.postDelayed({ attempt(left - 1) }, 50)
+    }
+    attempt(20)
   }
 
   private fun installBookPickBridge() {

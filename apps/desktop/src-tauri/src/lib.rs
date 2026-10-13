@@ -238,6 +238,81 @@ async fn set_volume_key_capture(app: tauri::AppHandle, captured: bool) -> Result
 #[tauri::command]
 fn set_volume_key_capture(_captured: bool) {}
 
+/// While a book is open, Android page-turn keys (and, on Onyx, the volume
+/// rocker and d-pad) turn pages instead of scrolling the WebView. The
+/// frontend releases the capture while a text field is focused. Off Android
+/// it is a no-op so the command still resolves for `generate_handler!`.
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn set_reader_page_key_capture(
+    app: tauri::AppHandle,
+    captured: bool,
+) -> Result<(), CommandError> {
+    on_main_thread(&app, move || {
+        use tao::platform::android::prelude::main_android_context;
+        let Some(ctx) = main_android_context() else {
+            log::warn!("setReaderPageKeyCapture: no android context yet");
+            return;
+        };
+        let Ok(vm) = (unsafe { jni::JavaVM::from_raw(ctx.java_vm.cast()) }) else {
+            return;
+        };
+        let Ok(mut env) = vm.attach_current_thread() else {
+            return;
+        };
+        let activity = unsafe { jni::objects::JObject::from_raw(ctx.context_jobject.cast()) };
+        if let Err(err) = env.call_method(
+            &activity,
+            "setReaderPageKeyCapture",
+            "(Z)V",
+            &[jni::objects::JValue::Bool(captured as u8)],
+        ) {
+            log::error!("setReaderPageKeyCapture JNI call failed: {err}");
+            let _ = env.exception_clear();
+        }
+    })
+    .await
+}
+
+#[cfg(not(target_os = "android"))]
+#[tauri::command]
+fn set_reader_page_key_capture(_captured: bool) {}
+
+/// Keep an Onyx panel awake for the lifetime of an open book. The activity
+/// no-ops on other devices. Off Android the command is a no-op.
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn set_reader_keep_awake(app: tauri::AppHandle, awake: bool) -> Result<(), CommandError> {
+    on_main_thread(&app, move || {
+        use tao::platform::android::prelude::main_android_context;
+        let Some(ctx) = main_android_context() else {
+            log::warn!("setReaderKeepAwake: no android context yet");
+            return;
+        };
+        let Ok(vm) = (unsafe { jni::JavaVM::from_raw(ctx.java_vm.cast()) }) else {
+            return;
+        };
+        let Ok(mut env) = vm.attach_current_thread() else {
+            return;
+        };
+        let activity = unsafe { jni::objects::JObject::from_raw(ctx.context_jobject.cast()) };
+        if let Err(err) = env.call_method(
+            &activity,
+            "setReaderKeepAwake",
+            "(Z)V",
+            &[jni::objects::JValue::Bool(awake as u8)],
+        ) {
+            log::error!("setReaderKeepAwake JNI call failed: {err}");
+            let _ = env.exception_clear();
+        }
+    })
+    .await
+}
+
+#[cfg(not(target_os = "android"))]
+#[tauri::command]
+fn set_reader_keep_awake(_awake: bool) {}
+
 /// Move the Android task to the background (like pressing Home), keeping the
 /// process — and the loaded book — warm for an instant return. The web layer
 /// calls this when the back button unwinds past the shelf root; letting the
@@ -1185,6 +1260,8 @@ pub fn run() {
             set_status_bar_hidden,
             sync_safe_area,
             set_volume_key_capture,
+            set_reader_page_key_capture,
+            set_reader_keep_awake,
             storefront::app_store_storefront,
             move_task_to_back,
             book_pick_start,

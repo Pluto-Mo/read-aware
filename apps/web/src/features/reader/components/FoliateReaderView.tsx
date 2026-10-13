@@ -80,6 +80,7 @@ import { useReaderHoldMenu } from "../hooks/useReaderHoldMenu";
 import { useTextUnitHoldActions } from "../hooks/useTextUnitHoldActions";
 import { resolveDrawnRangeTap } from "../lib/content-tap";
 import { forwardKeyDownToApp, isEditableKeyTarget } from "../../../platform/app-keydown";
+import { PAGE_TURN_EVENT, setReaderKeepAwake, setReaderPageKeyCapture } from "../../../platform/page-keys";
 import { subscribeWheelPhaseEdges } from "../../../platform/wheel-phase";
 import { useDelayedFlag } from "../hooks/useDelayedFlag";
 import { useReaderTypography } from "../hooks/useReaderTypography";
@@ -237,6 +238,8 @@ const HOLD_MENU_HINT_KEY = "read-aware-hold-menu-hint";
  *  the OS preference when motion is left on `system`. */
 function prefersReducedMotion(): boolean {
   if (typeof document === "undefined") return false;
+  // E-ink partials ghost through Foliate's 300ms page glide.
+  if (document.documentElement.dataset.eink === "1") return true;
   if (document.documentElement.dataset.motion === "reduced") return true;
   return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
@@ -1880,6 +1883,39 @@ export function FoliateReaderView({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  // Android page-turn keys are consumed in the activity (the WebView would
+  // otherwise scroll them away) and arrive as PAGE_TURN_EVENT. Reuse the
+  // reader key path so zoom-pan and the PageUp/PageDown fallback stay one
+  // implementation. Capture drops while a field is focused, matching volume.
+  useEffect(() => {
+    let captured = false;
+    const syncCapture = () => {
+      const wanted = !isEditableKeyTarget(document.activeElement);
+      if (wanted === captured) return;
+      captured = wanted;
+      setReaderPageKeyCapture(wanted);
+    };
+    const onPageTurn = (event: Event) => {
+      if (isEditableKeyTarget(document.activeElement)) return;
+      const direction = (event as CustomEvent<string>).detail;
+      if (direction !== "next" && direction !== "prev") return;
+      const key = direction === "next" ? "PageDown" : "PageUp";
+      window.dispatchEvent(new KeyboardEvent("keydown", { key, code: key, bubbles: true, cancelable: true }));
+    };
+    syncCapture();
+    setReaderKeepAwake(true);
+    window.addEventListener(PAGE_TURN_EVENT, onPageTurn);
+    document.addEventListener("focusin", syncCapture);
+    document.addEventListener("focusout", syncCapture);
+    return () => {
+      window.removeEventListener(PAGE_TURN_EVENT, onPageTurn);
+      document.removeEventListener("focusin", syncCapture);
+      document.removeEventListener("focusout", syncCapture);
+      if (captured) setReaderPageKeyCapture(false);
+      setReaderKeepAwake(false);
+    };
+  }, []);
+
   // Keep the renderer's `animated` flag in sync with the motion preference at
   // runtime (the Reduce-motion toggle flips `data-motion`; the OS pref can change
   // too), so smooth paging turns on/off without reopening the book.
@@ -1890,7 +1926,7 @@ export function FoliateReaderView({
     const observer = new MutationObserver(sync);
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ["data-motion"],
+      attributeFilter: ["data-motion", "data-eink"],
     });
     return () => {
       media?.removeEventListener?.("change", sync);

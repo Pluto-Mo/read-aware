@@ -1,4 +1,5 @@
 import { hasCoarsePointer } from "../../../platform/environment";
+import { isEinkDocument } from "../../../platform/eink";
 import { localKV } from "../../../platform/local-store";
 import { copyEventCause, type DomainActor } from "../../../platform/domain-actor";
 import { isPluginRef } from "../../plugins/lib/plugin-theme";
@@ -242,22 +243,32 @@ function normalizeLanguageFonts(value: unknown): Record<string, ReaderFontPrefer
   return entries.length ? Object.fromEntries(entries) : undefined;
 }
 
+// Read once at module init. The Onyx shell injects `data-eink` at document
+// start, before this bundle evaluates. Other platforms never set it, so the
+// defaults below stay the desktop/phone split.
+const einkDefaults = isEinkDocument();
+
 export const DEFAULT_READER_SETTINGS: ReaderSettings = {
-  theme: "warm",
+  // Warm paper dithers on a 16-level panel; a white page stays clean.
+  theme: einkDefaults ? "light" : "warm",
   fontFamily: "curated:inter",
   fontSize: "medium",
-  fontWeight: "regular",
+  // Onyx's e-ink guide asks for a heavier body face so strokes survive REGAL.
+  fontWeight: einkDefaults ? "medium" : "regular",
   lineSpacing: "comfortable",
   paragraphSpacing: "normal",
   textAlign: "book",
   // Touch screens read with mobile-typical tight margins by default; desktop
-  // keeps the roomier editorial measure. Evaluated once — it's a device trait.
-  pageMargins: hasCoarsePointer() ? "narrow" : "wide",
-  // Same device split: phones page one column at a time, desktop opens as a
-  // two-page spread (the renderer already folds a spread to one column while
-  // the viewport is portrait, so narrow desktop windows stay readable).
-  readingMode: hasCoarsePointer() ? "paginated-single" : "paginated-double",
-  fixedLayoutReadingMode: "scroll",
+  // keeps the roomier editorial measure. A 7" panel is in the same class.
+  // Evaluated once — it's a device trait.
+  pageMargins: einkDefaults || hasCoarsePointer() ? "narrow" : "wide",
+  // Same device split: phones and e-ink page one column at a time, desktop
+  // opens as a two-page spread (the renderer already folds a spread to one
+  // column while the viewport is portrait, so narrow desktop windows stay
+  // readable).
+  readingMode: einkDefaults || hasCoarsePointer() ? "paginated-single" : "paginated-double",
+  // Fixed-layout scroll is a stream of partials. Page the sheet instead.
+  fixedLayoutReadingMode: einkDefaults ? "paginated-single" : "scroll",
   // Most fixed-layout reading is text on paper, where following the palette is
   // the whole point of choosing one; readers of photography and art books can
   // turn it off per book.
@@ -266,7 +277,7 @@ export const DEFAULT_READER_SETTINGS: ReaderSettings = {
 
 export const DEFAULT_READER_PREFERENCES: ReaderSettingsPreferences = {
   ...DEFAULT_READER_SETTINGS,
-  theme: "warm",
+  theme: einkDefaults ? "light" : "warm",
 };
 
 /** Coerce a persisted font value to a valid selection, migrating legacy presets. */

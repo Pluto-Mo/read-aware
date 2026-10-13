@@ -15,6 +15,7 @@ import {
 } from "./reader-settings";
 import { curatedFallback, getCuratedFont, type CuratedFontKind } from "./curated-fonts";
 import type { ReaderPalette } from "./reader-theme";
+import { isEinkDocument } from "../../../platform/eink";
 
 // Trailing fallbacks after a user-picked system family, so a missing glyph (or a
 // font that was later uninstalled) lands on a readable default.
@@ -279,7 +280,14 @@ export function buildReaderContentCss(settings: ReaderSettings, assets: ReaderCo
       font-family: ${fontFamily} !important;
       font-size: ${fontSize} !important;
       font-weight: ${fontWeight} !important;
-      line-height: ${lineHeight} !important;
+      line-height: ${lineHeight} !important;${
+        isEinkDocument()
+          ? `
+      -webkit-font-smoothing: auto !important;
+      -moz-osx-font-smoothing: auto !important;
+      text-shadow: none !important;`
+          : ""
+      }
     }
 ${textAlignCss(settings.textAlign)}
     ${
