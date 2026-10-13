@@ -8,10 +8,11 @@ import org.junit.Test
 class ReaderKeysTest {
   @Test
   fun pageKeysAlwaysTurn() {
-    assertEquals(ReaderKeys.NEXT, ReaderKeys.pageTurn(KeyEvent.KEYCODE_PAGE_DOWN, false))
-    assertEquals(ReaderKeys.PREV, ReaderKeys.pageTurn(KeyEvent.KEYCODE_PAGE_UP, false))
-    assertEquals(ReaderKeys.NEXT, ReaderKeys.pageTurn(KeyEvent.KEYCODE_PAGE_DOWN, true))
-    assertEquals(ReaderKeys.PREV, ReaderKeys.pageTurn(KeyEvent.KEYCODE_PAGE_UP, true))
+    // Leaf 5: the physical previous key emits PAGE_DOWN, and next emits PAGE_UP.
+    assertEquals(ReaderKeys.PREV, ReaderKeys.pageTurn(KeyEvent.KEYCODE_PAGE_DOWN, false))
+    assertEquals(ReaderKeys.NEXT, ReaderKeys.pageTurn(KeyEvent.KEYCODE_PAGE_UP, false))
+    assertEquals(ReaderKeys.PREV, ReaderKeys.pageTurn(KeyEvent.KEYCODE_PAGE_DOWN, true))
+    assertEquals(ReaderKeys.NEXT, ReaderKeys.pageTurn(KeyEvent.KEYCODE_PAGE_UP, true))
   }
 
   @Test
@@ -22,12 +23,12 @@ class ReaderKeysTest {
     assertNull(ReaderKeys.pageTurn(KeyEvent.KEYCODE_DPAD_LEFT, false))
     assertNull(ReaderKeys.pageTurn(KeyEvent.KEYCODE_DPAD_DOWN, false))
     assertNull(ReaderKeys.pageTurn(KeyEvent.KEYCODE_DPAD_UP, false))
-    assertEquals(ReaderKeys.NEXT, ReaderKeys.pageTurn(KeyEvent.KEYCODE_VOLUME_DOWN, true))
-    assertEquals(ReaderKeys.PREV, ReaderKeys.pageTurn(KeyEvent.KEYCODE_VOLUME_UP, true))
-    assertEquals(ReaderKeys.NEXT, ReaderKeys.pageTurn(KeyEvent.KEYCODE_DPAD_RIGHT, true))
-    assertEquals(ReaderKeys.NEXT, ReaderKeys.pageTurn(KeyEvent.KEYCODE_DPAD_DOWN, true))
-    assertEquals(ReaderKeys.PREV, ReaderKeys.pageTurn(KeyEvent.KEYCODE_DPAD_LEFT, true))
-    assertEquals(ReaderKeys.PREV, ReaderKeys.pageTurn(KeyEvent.KEYCODE_DPAD_UP, true))
+    assertEquals(ReaderKeys.PREV, ReaderKeys.pageTurn(KeyEvent.KEYCODE_VOLUME_DOWN, true))
+    assertEquals(ReaderKeys.NEXT, ReaderKeys.pageTurn(KeyEvent.KEYCODE_VOLUME_UP, true))
+    assertEquals(ReaderKeys.PREV, ReaderKeys.pageTurn(KeyEvent.KEYCODE_DPAD_RIGHT, true))
+    assertEquals(ReaderKeys.PREV, ReaderKeys.pageTurn(KeyEvent.KEYCODE_DPAD_DOWN, true))
+    assertEquals(ReaderKeys.NEXT, ReaderKeys.pageTurn(KeyEvent.KEYCODE_DPAD_LEFT, true))
+    assertEquals(ReaderKeys.NEXT, ReaderKeys.pageTurn(KeyEvent.KEYCODE_DPAD_UP, true))
   }
 
   @Test
