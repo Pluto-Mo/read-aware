@@ -76,6 +76,8 @@ export function resolveAppTheme(preference: AppThemePreference): "light" | "dark
  * CSS alone.
  */
 export function prefersReducedMotion(): boolean {
+  // E-ink partials ghost through CSS transitions. The shell sets `data-eink`.
+  if (typeof document !== "undefined" && document.documentElement?.dataset.eink === "1") return true;
   if (getAppSettings().motion === "reduced") return true;
   if (typeof window === "undefined" || !window.matchMedia) return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
