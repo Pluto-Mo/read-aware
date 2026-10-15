@@ -200,7 +200,8 @@
     "searchInvalidInput": "請使用有效的查詢詞或公開網頁網址。",
     "searchProvider": "搜尋服務商傳回了異常回應。",
     "searchFetchFailed": "無法讀取此網頁，可能需要登入或不允許自動存取。",
-    "searchTooLarge": "此網頁過大，請嘗試更小的資料來源。"
+    "searchTooLarge": "此網頁過大，請嘗試更小的資料來源。",
+    "bookFolderTooLarge": "這個資料夾裡的書超過 5000 本，請選擇較小的資料夾分批匯入。"
   },
   "crashPrompt": {
     "title": "ReadAware 上次執行發生了問題",

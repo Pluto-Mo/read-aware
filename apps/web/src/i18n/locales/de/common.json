@@ -200,7 +200,8 @@
     "searchInvalidInput": "Verwenden Sie eine gültige Suchanfrage oder öffentliche Web-URL.",
     "searchProvider": "Der Suchanbieter hat eine unerwartete Antwort geliefert.",
     "searchFetchFailed": "Die Seite konnte nicht gelesen werden. Sie erfordert möglicherweise eine Anmeldung oder blockiert automatisierte Zugriffe.",
-    "searchTooLarge": "Die Seite ist zu groß. Versuchen Sie eine kleinere Quelle."
+    "searchTooLarge": "Die Seite ist zu groß. Versuchen Sie eine kleinere Quelle.",
+    "bookFolderTooLarge": "Dieser Ordner enthält mehr als 5.000 Bücher. Wähle einen kleineren Ordner und importiere in Teilen."
   },
   "crashPrompt": {
     "title": "ReadAware hatte beim letzten Mal ein Problem",

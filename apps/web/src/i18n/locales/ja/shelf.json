@@ -6,7 +6,8 @@
     "remove": "削除",
     "delete": "削除",
     "close": "閉じる",
-    "done": "完了"
+    "done": "完了",
+    "importFolder": "フォルダを読み込む"
   },
   "books_other": "{{count}}冊の本",
   "workspace": {
@@ -18,7 +19,10 @@
   },
   "importNotice": {
     "duplicate_other": "すでにライブラリにある{{count}}冊の本をスキップしました。",
-    "combined": "{{skipped}} 新たに{{count}}冊をインポートしました。"
+    "combined": "{{skipped}} 新たに{{count}}冊をインポートしました。",
+    "failedTitle": "一部の本を読み込めませんでした",
+    "failed_one": "「{{title}}」を読み込めませんでした。",
+    "failed_other": "{{count}} 冊を読み込めませんでした（「{{title}}」など）。"
   },
   "importDialog": {
     "title": "本をインポート",
@@ -127,5 +131,17 @@
   },
   "dragDock": {
     "newCollectionTitle_other": "{{count}}冊の本で新しいコレクションを作成"
+  },
+  "folderImport": {
+    "dialogTitle": "本のフォルダを選択",
+    "doneTitle": "「{{folder}}」を読み込みました",
+    "doneTitleMany_one": "{{count}} 個のフォルダを読み込みました",
+    "doneTitleMany_other": "{{count}} 個のフォルダを読み込みました",
+    "imported_one": "新しい本 {{count}} 冊。",
+    "imported_other": "新しい本 {{count}} 冊。",
+    "duplicates_one": "{{count}} 冊はすでに本棚にあります。",
+    "duplicates_other": "{{count}} 冊はすでに本棚にあります。",
+    "agentHint": "元のフォルダごとにまとめたいときは、Agent に頼めます。",
+    "empty": "「{{folder}}」に読み込める本はありません。"
   }
 }

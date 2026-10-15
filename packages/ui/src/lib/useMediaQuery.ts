@@ -27,7 +27,58 @@ export function useMediaQuery(query: string): boolean {
  */
 export const PHONE_VIEWPORT_QUERY = "(max-width: 47.9375rem)";
 
-/** True on phone-width viewports (below Tailwind `md`). */
+/**
+ * Exclusive sheets (not docked columns) while an e-ink panel's CSS width is
+ * still under 60rem. The Onyx shell may retarget density, so this is not a
+ * fixed 896px assumption. Only consulted when the document is marked
+ * `data-eink`. The reader does not use the phone bottom toolbar on that
+ * panel; see ReaderShellOverlay.
+ */
+export const EINK_COMPACT_QUERY = "(max-width: 60rem)";
+
+/** Keep in step with `isEinkDocument` in `apps/web/src/platform/eink.ts`. */
+export function isEinkDocument(): boolean {
+  return typeof document !== "undefined" && document.documentElement?.dataset.eink === "1";
+}
+
+/** Phone layout, or e-ink compact layout when the shell set `data-eink`. */
+export function isCompactViewport(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  if (window.matchMedia(PHONE_VIEWPORT_QUERY).matches) return true;
+  return isEinkDocument() && window.matchMedia(EINK_COMPACT_QUERY).matches;
+}
+
+function subscribeCompactViewport(onChange: () => void): () => void {
+  const phone = window.matchMedia(PHONE_VIEWPORT_QUERY);
+  const eink = window.matchMedia(EINK_COMPACT_QUERY);
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-eink"] });
+  phone.addEventListener("change", onChange);
+  eink.addEventListener("change", onChange);
+  return () => {
+    phone.removeEventListener("change", onChange);
+    eink.removeEventListener("change", onChange);
+    observer.disconnect();
+  };
+}
+
+/**
+ * True on phone-width viewports, and on an e-ink panel whose CSS width is
+ * still inside {@link EINK_COMPACT_QUERY}. Ordinary desktops and phones are
+ * unchanged: `data-eink` is only set by the Onyx Android shell.
+ */
 export function usePhoneViewport(): boolean {
-  return useMediaQuery(PHONE_VIEWPORT_QUERY);
+  return useSyncExternalStore(subscribeCompactViewport, isCompactViewport, () => false);
+}
+
+function subscribeEinkFlag(onChange: () => void): () => void {
+  if (typeof document === "undefined") return () => {};
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-eink"] });
+  return () => observer.disconnect();
+}
+
+/** True after the Onyx shell has set `data-eink`. False everywhere else. */
+export function useEinkDocument(): boolean {
+  return useSyncExternalStore(subscribeEinkFlag, isEinkDocument, () => false);
 }

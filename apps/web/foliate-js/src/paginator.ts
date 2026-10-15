@@ -955,8 +955,13 @@ export class Paginator extends HTMLElement {
     this.scrollBy(dx, dy);
   }
   #onTouchEnd(e: TouchEvent) {
+    // READAWARE: only a drag moved the page, so only a drag has a position to
+    // settle. A tap left it where it was, and snapping back to the touch's
+    // starting page would undo whatever the tap itself turned to (tap zones,
+    // a text-unit step onto the next page) a frame later.
+    const dragged = this.#touchScrolled;
     this.#touchScrolled = false;
-    if (this.scrolled) return;
+    if (this.scrolled || !dragged) return;
     const state = this.#touchState;
     // READAWARE: the lift is the drag's last point; without it a flick's
     // final stretch is missing from the release velocity.

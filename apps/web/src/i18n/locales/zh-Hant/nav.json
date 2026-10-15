@@ -15,7 +15,8 @@
     "primaryNavigation": "主要導覽",
     "stats": "閱讀統計",
     "settings": "設定",
-    "more": "更多"
+    "more": "更多",
+    "importFolder": "匯入資料夾"
   },
   "update": {
     "available": "有可用更新",

@@ -44,6 +44,10 @@
     "goAgent": {
       "title": "ReadAware fragen",
       "keywords": "agent ki chat fragen kontext notizen"
+    },
+    "importFolder": {
+      "title": "Ordner importieren",
+      "keywords": "hinzufügen ordner verzeichnis bibliothek stapel import folder"
     }
   },
   "layout": {

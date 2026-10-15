@@ -84,6 +84,7 @@ const meta = {
     activeTopNav: "shelf",
     isImporting: false,
     onImport: () => {},
+    onImportFolder: () => {},
     onOpenSettings: () => {},
     onOpenSearch: () => {},
     onTopNavChange: () => {},

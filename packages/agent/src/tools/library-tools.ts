@@ -17,7 +17,8 @@ export function buildThreadTools(scope: ThreadScope, deps: RuntimeDeps): AgentTo
   const listBooks: AgentTool = {
     name: "list_books",
     label: "List books",
-    description: "List every book on the user's shelf with title, author, and reading progress.",
+    description:
+      "List every book on the user's shelf with title, author, collection, and reading progress. Books imported from a folder carry sourcePath (the picked folder's name plus the path below it, e.g. Books/Sci-fi/Dune.epub): use it to group them by their original folders with manage_collection when the user asks.",
     parameters: Type.Object({}),
     execute: async () => textResult(await deps.library.listBooks()),
   };

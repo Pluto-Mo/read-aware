@@ -15,7 +15,8 @@
     "primaryNavigation": "主导航",
     "stats": "阅读统计",
     "settings": "设置",
-    "more": "更多"
+    "more": "更多",
+    "importFolder": "导入文件夹"
   },
   "update": {
     "available": "有可用更新",

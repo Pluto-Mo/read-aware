@@ -701,6 +701,31 @@ fn scalar<T: rusqlite::types::FromSql>(conn: &Connection, sql: &str) -> T {
 }
 
 #[test]
+fn folder_source_path_projects_and_is_never_erased_by_a_plain_import() {
+    let mut conn = migrated_conn();
+    let mut from_folder = imported("folder", 1_000, "b1", "Dune");
+    from_folder.payload["sourcePath"] = serde_json::json!("Books/Sci-fi/Dune.epub");
+    commit_events_inner(
+        &mut conn,
+        &[from_folder, imported("plain", 1_001, "b2", "Other")],
+    )
+    .unwrap();
+    let path = |conn: &Connection, id: &str| -> Option<String> {
+        conn.query_row("SELECT source_path FROM books WHERE id=?1", [id], |row| {
+            row.get(0)
+        })
+        .unwrap()
+    };
+    assert_eq!(path(&conn, "b1").as_deref(), Some("Books/Sci-fi/Dune.epub"));
+    assert_eq!(path(&conn, "b2"), None);
+
+    // A later import of the same id without provenance (genesis backfill, a
+    // single-file re-import) keeps the known origin.
+    commit_events_inner(&mut conn, &[imported("again", 2_000, "b1", "Dune")]).unwrap();
+    assert_eq!(path(&conn, "b1").as_deref(), Some("Books/Sci-fi/Dune.epub"));
+}
+
+#[test]
 fn narrativity_classification_and_digest_flavor_project_and_replay() {
     let mut conn = migrated_conn();
     commit_events_inner(

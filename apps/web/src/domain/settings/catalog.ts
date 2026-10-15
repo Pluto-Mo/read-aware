@@ -42,6 +42,13 @@ import type { Highlight } from "../../features/annotations/lib/annotation-types"
 import { contentPreferenceDefinitions } from "./content-preferences";
 import type { ShelfView } from "../../features/shelf/lib/shelf-view";
 import { shelfPreferenceDefinitions } from "./shelf-preferences";
+import {
+  PAGE_TURN_TAP_ZONE_WIDTHS,
+  type PageTurnSettings,
+  type PageTurnTapZoneWidth,
+  type PageTurnTapZones,
+  type VolumeKeyDirection,
+} from "./page-turn-settings";
 import { shortcutPreferenceDefinitions } from "./shortcut-preferences";
 import type { ShortcutEnvironment } from "../../features/settings/lib/shortcut-catalog";
 import type { ShortcutBindings } from "../../features/settings/lib/shortcuts";
@@ -55,6 +62,8 @@ export type SettingsDraft = {
   appearance: AppSettings;
   reading: ReaderSettingsPreferences;
   readerOverrides: ReaderOverrides;
+  /** Device-local tap-zone and volume-key page turning (global-only). */
+  pageTurn: PageTurnSettings;
   /** Derived source-language hints, not writable settings. */
   bookLanguages?: ReaderBookLanguages;
   contentTypography: ContentTypographySettings;
@@ -313,6 +322,76 @@ function readingDefinition(definition: Omit<SettingDefinition, "section" | "supp
     section: "reading",
     supportedTargets: READING_TARGETS,
   };
+}
+
+const PAGE_TURN_DEVICE_LOCAL = "Device-local page-turn input; applies to every book and is never overridden per book.";
+
+/** Tap zones and volume keys. Paths sit with the reader settings but are
+ *  global-only: input habits belong to the device, not to one book. */
+function pageTurnDefinitions(): SettingDefinition[] {
+  return [
+    {
+      path: "reading.pageTurn.tapZones",
+      section: "reading",
+      label: "Tap to turn pages",
+      description: `${PAGE_TURN_DEVICE_LOCAL} off: every tap toggles the reader toolbar. sides: the left zone turns back and the right zone forward (mirrored in right-to-left books). forward: both side zones turn forward, for one-handed reading. The center band always toggles the toolbar; in scroll mode a turn scrolls one screen.`,
+      kind: "enum",
+      supportedTargets: ["global"],
+      options: [
+        { value: "off", label: "Off" },
+        { value: "sides", label: "Left back, right forward" },
+        { value: "forward", label: "Both sides forward" },
+      ] satisfies { value: PageTurnTapZones; label: string }[],
+      read: (state) => state.pageTurn.tapZones,
+      write: (state, value) => {
+        state.pageTurn = { ...state.pageTurn, tapZones: value as PageTurnTapZones };
+      },
+    },
+    {
+      path: "reading.pageTurn.tapZoneWidth",
+      section: "reading",
+      label: "Tap zone width",
+      description: `${PAGE_TURN_DEVICE_LOCAL} Share of the reader's width each side zone covers: narrow 20%, medium 30%, wide 40%. Has no effect while tapZones is off.`,
+      kind: "enum",
+      supportedTargets: ["global"],
+      options: PAGE_TURN_TAP_ZONE_WIDTHS.map((value) => ({ value, label: value })),
+      read: (state) => state.pageTurn.tapZoneWidth,
+      write: (state, value) => {
+        state.pageTurn = { ...state.pageTurn, tapZoneWidth: value as PageTurnTapZoneWidth };
+      },
+    },
+    {
+      path: "reading.pageTurn.volumeKeys",
+      section: "reading",
+      label: "Turn pages with the volume keys",
+      description: `${PAGE_TURN_DEVICE_LOCAL} Android only — other platforms cannot capture the volume buttons, so the value has no effect there. While a book is open the keys turn pages instead of changing the volume, and are handed back whenever a text field has focus. While a text-unit reading mode (such as sentence stepping) is on, the keys step its units regardless of this switch.`,
+      kind: "boolean",
+      supportedTargets: ["global"],
+      read: (state) => state.pageTurn.volumeKeys,
+      write: (state, value) => {
+        state.pageTurn = { ...state.pageTurn, volumeKeys: value as boolean };
+      },
+    },
+    {
+      path: "reading.pageTurn.volumeKeyDirection",
+      section: "reading",
+      label: "Volume key direction",
+      description: `${PAGE_TURN_DEVICE_LOCAL} Android only. Which volume key reads on; the other steps back. Applies to page turns and to text-unit stepping alike.`,
+      kind: "enum",
+      supportedTargets: ["global"],
+      options: [
+        { value: "down-forward", label: "Volume down reads on" },
+        { value: "up-forward", label: "Volume up reads on" },
+      ] satisfies { value: VolumeKeyDirection; label: string }[],
+      read: (state) => state.pageTurn.volumeKeyDirection,
+      write: (state, value) => {
+        state.pageTurn = {
+          ...state.pageTurn,
+          volumeKeyDirection: value as VolumeKeyDirection,
+        };
+      },
+    },
+  ];
 }
 
 const MENU_SURFACES: Array<{
@@ -648,6 +727,7 @@ export function buildSettingDefinitions(draft: SettingsDraft): SettingDefinition
         },
       }),
     ),
+    ...pageTurnDefinitions(),
     ...AI_FEATURE_KEYS.map((key) =>
       globalDefinition({
         path: `ai.preferences.features.${key}`,

@@ -26,6 +26,8 @@ export interface BookSummary {
   /** Original import file name/size; absent on virtual books. */
   fileName?: string;
   fileSize?: number;
+  /** Folder-relative origin of a folder import (`Books/Sci-fi/Dune.epub`); absent otherwise. */
+  sourcePath?: string;
   /**
    * Digest organization (people/events versus concepts), written
    * by the idle classification pipeline. Absent = not yet classified.

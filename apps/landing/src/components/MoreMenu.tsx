@@ -12,6 +12,7 @@ import {
   LOCALE_LANG,
   hasLocaleVariants,
   localizePath,
+  servedHref,
   type Locale,
 } from "../lib/i18n";
 import { CONTACT_EMAIL, DISCORD_URL } from "../lib/site";
@@ -113,7 +114,7 @@ export function MoreMenu({ locale = "en", pathname }: { locale?: Locale; pathnam
           {pageLocales.map((target) => (
             <a
               key={target}
-              href={`${localizePath(pathname, target)}${explorerQuery}`}
+              href={`${servedHref(localizePath(pathname, target))}${explorerQuery}`}
               lang={LOCALE_LANG[target]}
               onClick={() => {
                 // An explicit pick outranks the homepage's Accept-Language

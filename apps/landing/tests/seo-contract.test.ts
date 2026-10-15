@@ -101,7 +101,7 @@ test("Chinese platform pages have localized navigation, direct assets, FAQs and 
     if (!download) throw new Error(`No primary ${platform} download`);
     expect(primary[0]).toBe(download.url);
     expect(html).toContain('lang="zh-CN"');
-    expect(html).toContain('href="/zh/pricing"');
+    expect(html).toContain('href="/zh/pricing/"');
     const faq = JSON.parse(schemas.join(""));
     expect(faq["@type"]).toBe("FAQPage");
     for (const question of faq.mainEntity) {
@@ -130,4 +130,28 @@ test("all locale privacy and pricing copy acknowledge measurement, AI processing
   const login = await Bun.file(new URL("sync/login/index.html", dist)).text();
   expect(login).not.toContain("cloudflareinsights");
   expect(login).not.toContain("site-analytics");
+});
+
+test("internal anchors use the served trailing-slash form so no link goes through the 308", async () => {
+  let checked = 0;
+  for (const url of urls) {
+    const path = new URL(url).pathname;
+    const html = await Bun.file(new URL(`${path.slice(1)}index.html`, dist)).text();
+    const hrefs: string[] = [];
+    await new HTMLRewriter()
+      .on('body a[href^="/"]', {
+        element(el) {
+          hrefs.push(el.getAttribute("href")!);
+        },
+      })
+      .transform(new Response(html))
+      .text();
+    expect(hrefs.length, `${url}: prerendered body has internal links`).toBeGreaterThan(0);
+    for (const href of hrefs) {
+      const target = new URL(href, url).pathname;
+      expect(target.endsWith("/") || /\.[a-z0-9]+$/i.test(target), `${url} links to ${href}`).toBe(true);
+      checked++;
+    }
+  }
+  expect(checked).toBeGreaterThan(1000);
 });

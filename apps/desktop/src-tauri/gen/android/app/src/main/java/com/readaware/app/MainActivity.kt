@@ -1,13 +1,18 @@
 package com.readaware.app
 
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.DisplayMetrics
 import android.provider.Settings
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.activity.OnBackPressedCallback
@@ -17,13 +22,32 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import java.io.File
+import org.json.JSONObject
 
 class MainActivity : TauriActivity() {
+  override fun attachBaseContext(newBase: Context) {
+    // Before the WebView is created, so CSS pixels follow the measured panel.
+    super.attachBaseContext(if (OnyxEink.isDevice) OnyxDisplay.wrap(newBase) else newBase)
+  }
+
   companion object {
     /** Classic requestCode for the book picker — distinct from the
      *  ActivityResult launchers Tauri's PluginManager registers. */
     private const val BOOK_PICK_REQUEST = 51733
+    /** The folder (SAF tree) picker for folder imports. */
+    private const val FOLDER_PICK_REQUEST = 51734
+    /** Mirrors `MAX_FOLDER_BOOKS` / `MAX_FOLDER_DEPTH` in book_folders.rs. */
+    private const val FOLDER_PICK_MAX_BOOKS = 5000
+    private const val FOLDER_PICK_MAX_DEPTH = 32
+    /** Importable suffixes — mirror `is_book_path` in external_open.rs (the
+     *  real book formats, not the picker's broader ZIP candidates). */
+    private val FOLDER_BOOK_SUFFIXES = listOf(
+      ".epub", ".mobi", ".prc", ".azw3", ".azw", ".kf8", ".fb2", ".fb2.zip", ".fbz",
+      ".cbz", ".cbr", ".txt", ".text", ".html", ".htm", ".xhtml", ".pdf",
+    )
   }
 
   /** Generation of the pick currently in flight; 0 = none. */
@@ -40,10 +64,22 @@ class MainActivity : TauriActivity() {
    *  every time, a successful pick intermittently. Parked state + polling
    *  cannot lose the result. */
   @Volatile private var bookPickResult: String? = null
-  /** While true, volume keys step the reader's sentence navigator instead of
-   *  changing the volume. Toggled from Rust (`set_volume_key_capture`) as the
-   *  navigator mode starts/stops, so media volume works normally otherwise. */
+  /** While true, volume keys navigate the reader (page turns, or text-unit
+   *  steps) instead of changing the volume. Toggled from Rust
+   *  (`set_volume_key_capture`) while the web layer holds a claim on the keys,
+   *  so media volume works normally otherwise. */
   @Volatile private var volumeKeysCaptured = false
+  /** While true, page-turn keys (and, on Onyx, volume and d-pad) turn reader
+   *  pages. Toggled from Rust (`set_reader_page_key_capture`) for the lifetime
+   *  of the reader, released while a text field is focused. A live volume-key
+   *  claim (page-turn setting or text-unit mode) still wins the rocker. */
+  @Volatile private var readerPageKeysCaptured = false
+  /** Generation of the folder pick in flight; 0 = none. */
+  @Volatile private var folderPickGeneration = 0
+  /** Parked folder-pick outcome as JSON (see book_folders.rs), collected by
+   *  polling for the same reason as [bookPickResult]. Null while the picker
+   *  is open or the walk is still running. */
+  @Volatile private var folderPickResult: String? = null
   /** APK waiting for the user to grant this app install-source permission. */
   @Volatile private var pendingUpdateApkPath: String? = null
 
@@ -104,6 +140,18 @@ class MainActivity : TauriActivity() {
       builtInZoomControls = false
       displayZoomControls = false
     }
+    if (OnyxEink.isDevice) {
+      // Before the bundle evaluates, so first-run reader defaults can see it.
+      if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+        WebViewCompat.addDocumentStartJavaScript(
+          webView,
+          "document.documentElement.dataset.eink='1';",
+          setOf("*"),
+        )
+      }
+      OnyxEink.prepareWebView(webView)
+      markEinkDocument()
+    }
   }
 
   /** Called from Rust (the `move_task_to_back` command): background the app
@@ -125,8 +173,12 @@ class MainActivity : TauriActivity() {
         controller.systemBarsBehavior =
           WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         controller.hide(WindowInsetsCompat.Type.statusBars())
+        // BOOX draws its own navigation strip. Hiding it with the status bar
+        // gives the page the full panel; a swipe still reveals both.
+        if (OnyxEink.isDevice) controller.hide(WindowInsetsCompat.Type.navigationBars())
       } else {
         controller.show(WindowInsetsCompat.Type.statusBars())
+        if (OnyxEink.isDevice) controller.show(WindowInsetsCompat.Type.navigationBars())
       }
     }
   }
@@ -144,6 +196,53 @@ class MainActivity : TauriActivity() {
   /** Called from Rust (the `set_volume_key_capture` command). */
   fun setVolumeKeyCapture(captured: Boolean) {
     volumeKeysCaptured = captured
+  }
+
+  /** Called from Rust (the `set_reader_page_key_capture` command). */
+  fun setReaderPageKeyCapture(captured: Boolean) {
+    readerPageKeysCaptured = captured
+  }
+
+  /**
+   * Called from Rust (the `set_reader_keep_awake` command) for the lifetime
+   * of an open book. On Onyx, hold the panel awake — e-ink draws almost
+   * nothing once the page is still, and the system timeout would blank it
+   * mid-chapter. Released when the reader unmounts, including while a note
+   * field has focus (page keys are released separately in that case).
+   */
+  fun setReaderKeepAwake(awake: Boolean) {
+    if (!OnyxEink.isDevice) return
+    runOnUiThread {
+      if (awake) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+      else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+  }
+
+  /**
+   * Publish the open book's cover as the BOOX standby image. Called from Rust
+   * (`set_onyx_lock_cover`) when a book opens and again if its cover arrives
+   * later. [sourcePath] is an app-private raster (empty when the book has no
+   * decodable cover — the shell draws [title] instead). No-op off Onyx.
+   * Closing the book does not clear the image: the ROM cannot restore the
+   * previous screensaver.
+   */
+  fun setLockCover(sourcePath: String, title: String) {
+    if (!OnyxEink.isDevice) return
+    val (width, height) = panelPixels()
+    OnyxLockCover.publish(this, sourcePath, title, width, height)
+  }
+
+  private fun panelPixels(): Pair<Int, Int> {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      val mode = display?.mode
+      if (mode != null && mode.physicalWidth > 0 && mode.physicalHeight > 0) {
+        return mode.physicalWidth to mode.physicalHeight
+      }
+    }
+    val metrics = DisplayMetrics()
+    @Suppress("DEPRECATION")
+    windowManager.defaultDisplay.getRealMetrics(metrics)
+    return metrics.widthPixels to metrics.heightPixels
   }
 
   /** Current Android build number, used to reject non-upgrade release APKs. */
@@ -187,6 +286,10 @@ class MainActivity : TauriActivity() {
 
   override fun onResume() {
     super.onResume()
+    if (OnyxEink.isDevice) {
+      findViewById<View>(android.R.id.content)?.let { OnyxEink.onResume(it) }
+      markEinkDocument()
+    }
     val apkPath = pendingUpdateApkPath ?: return
     if (
       Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
@@ -194,6 +297,37 @@ class MainActivity : TauriActivity() {
     ) {
       openPackageInstaller(File(apkPath))
     }
+  }
+
+  /**
+   * E-Ink Center applies DPI and font scale while the app is open. Those are
+   * listed in configChanges so the activity — and the book on screen — stay
+   * up. The WebView keeps its page; a later cold start picks up the new
+   * density because [OnyxDisplay] does not override the 280–350 band.
+   */
+  override fun onConfigurationChanged(newConfig: Configuration) {
+    super.onConfigurationChanged(newConfig)
+    if (!OnyxEink.isDevice) return
+    val metrics = resources.displayMetrics
+    Log.i(
+      "ReadAwareDisplay",
+      "configChanged densityDpi=${metrics.densityDpi} fontScale=${newConfig.fontScale} band=${OnyxDisplay.DPI_MIN}-${OnyxDisplay.DPI_MAX}",
+    )
+    findViewById<View>(android.R.id.content)?.let { OnyxEink.onResume(it) }
+    markEinkDocument()
+  }
+
+  /** Copy the open book to public storage and start NeoReader. See [OnyxSystemReader]. */
+  fun openInSystemReader(sourcePath: String, fileName: String, mime: String): String {
+    return OnyxSystemReader.begin(this, sourcePath, fileName, mime, ::dispatchSystemReaderStatus)
+  }
+
+  fun dispatchSystemReaderStatus(status: String) {
+    val quoted = JSONObject.quote(status)
+    findWebView(findViewById(android.R.id.content))?.evaluateJavascript(
+      "window.dispatchEvent(new CustomEvent('ra-system-reader',{detail:$quoted}));",
+      null,
+    )
   }
 
   private fun openPackageInstaller(apk: File): String {
@@ -270,10 +404,132 @@ class MainActivity : TauriActivity() {
     return result
   }
 
+  /** Called from Rust (`book_folder_pick_start`): open the system folder
+   *  picker. Once the user picks, the granted tree is walked off the UI
+   *  thread and the outcome parked in [folderPickResult]. */
+  fun startFolderPick(generation: Int) {
+    folderPickGeneration = generation
+    folderPickResult = null
+    runOnUiThread {
+      try {
+        @Suppress("DEPRECATION")
+        startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), FOLDER_PICK_REQUEST)
+      } catch (error: Throwable) {
+        folderPickResult = folderPickOutcome(generation, "error")
+          .put("error", error.message ?: error.javaClass.name)
+          .toString()
+        folderPickGeneration = 0
+      }
+    }
+  }
+
+  /** Called from Rust (`book_folder_pick_poll`): hand over (and clear) the
+   *  parked folder pick, or null while it is still in progress. */
+  fun takeFolderPickResult(): String? {
+    val result = folderPickResult
+    if (result != null) folderPickResult = null
+    return result
+  }
+
+  private fun folderPickOutcome(generation: Int, status: String) =
+    org.json.JSONObject().put("generation", generation).put("status", status)
+
+  private fun onFolderPicked(resultCode: Int, data: Intent?) {
+    val generation = folderPickGeneration
+    folderPickGeneration = 0
+    val tree = data?.data
+    if (resultCode != RESULT_OK || tree == null) {
+      folderPickResult = folderPickOutcome(generation, "cancelled").toString()
+      return
+    }
+    // A big library is thousands of provider queries: never on the UI thread.
+    Thread {
+      folderPickResult = try {
+        walkBookFolder(tree, generation).toString()
+      } catch (error: Throwable) {
+        folderPickOutcome(generation, "error").put("error", error.message ?: error.javaClass.name).toString()
+      }
+    }.start()
+  }
+
+  /** Every importable book below the picked tree, as document URIs plus their
+   *  `/`-separated path under it. Skips dotfiles, dot-folders and `__MACOSX`
+   *  like the desktop walk; stops (truncated) past FOLDER_PICK_MAX_BOOKS. */
+  private fun walkBookFolder(tree: Uri, generation: Int): org.json.JSONObject {
+    val rootId = android.provider.DocumentsContract.getTreeDocumentId(tree)
+    val rootName = queryDisplayName(
+      android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, rootId)
+    ) ?: rootId.substringAfterLast(':').substringAfterLast('/')
+    val files = org.json.JSONArray()
+    var truncated = false
+    val pending = ArrayDeque<Pair<String, List<String>>>()
+    pending.addLast(rootId to emptyList())
+    val columns = arrayOf(
+      android.provider.DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+      android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+      android.provider.DocumentsContract.Document.COLUMN_MIME_TYPE,
+      android.provider.DocumentsContract.Document.COLUMN_SIZE,
+    )
+    walk@ while (pending.isNotEmpty()) {
+      val (documentId, segments) = pending.removeLast()
+      val children = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(tree, documentId)
+      // An unreadable subfolder costs only its own books.
+      val cursor = contentResolver.query(children, columns, null, null, null) ?: continue
+      try {
+        while (cursor.moveToNext()) {
+          val childId = cursor.getString(0) ?: continue
+          val name = cursor.getString(1) ?: continue
+          if (name.startsWith('.') || name == "__MACOSX") continue
+          val mime = cursor.getString(2)
+          if (mime == android.provider.DocumentsContract.Document.MIME_TYPE_DIR) {
+            if (segments.size + 1 < FOLDER_PICK_MAX_DEPTH) pending.addLast(childId to segments + name)
+            continue
+          }
+          val lower = name.lowercase()
+          if (FOLDER_BOOK_SUFFIXES.none { lower.endsWith(it) }) continue
+          if (files.length() == FOLDER_PICK_MAX_BOOKS) {
+            truncated = true
+            break@walk
+          }
+          val size = if (cursor.isNull(3)) -1L else cursor.getLong(3)
+          files.put(
+            org.json.JSONObject()
+              .put("path", android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, childId).toString())
+              .put("relativePath", (segments + name).joinToString("/"))
+              .put("size", size)
+          )
+        }
+      } finally {
+        cursor.close()
+      }
+    }
+    return folderPickOutcome(generation, "picked")
+      .put("rootName", rootName)
+      .put("files", files)
+      .put("truncated", truncated)
+  }
+
+  private fun queryDisplayName(uri: Uri): String? = try {
+    contentResolver.query(
+      uri,
+      arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+      null,
+      null,
+      null,
+    )?.use { cursor -> if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getString(0) else null }
+  } catch (_: Throwable) {
+    // The tree's own name is cosmetic: fall back to its document id.
+    null
+  }
+
   @Deprecated("classic result API is intentional here")
   override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
     @Suppress("DEPRECATION")
     super.onActivityResult(requestCode, resultCode, data)
+    if (requestCode == FOLDER_PICK_REQUEST) {
+      onFolderPicked(resultCode, data)
+      return
+    }
     if (requestCode != BOOK_PICK_REQUEST) return
     val uris = mutableListOf<Uri>()
     if (resultCode == RESULT_OK && data != null) {
@@ -322,26 +578,78 @@ class MainActivity : TauriActivity() {
   }
 
   /**
-   * While captured, turn volume-key presses into sentence-navigator steps:
-   * volume down moves forward, volume up moves back (the e-reader convention).
-   * Key auto-repeat comes through as repeated ACTION_DOWNs, so holding a key
-   * steps continuously. Both actions are consumed so the volume HUD stays away;
-   * everything else falls through to the system.
+   * A live volume-key claim (the page-turn setting or a text-unit mode) wins
+   * the rocker and is relayed as `ra-volume-step`: volume down is "next",
+   * volume up is "prev". The web layer may flip that pair. Holding a key
+   * repeats as ACTION_DOWN, and both actions are consumed so the volume HUD
+   * stays away.
+   *
+   * Otherwise, while the reader captures page keys, PAGE_UP/PAGE_DOWN turn
+   * pages (`ra-page-turn`). On Onyx the volume rocker and d-pad do too, with
+   * the same direction (down/right = next). UP is consumed as well so the
+   * WebView cannot scroll. Unmapped keys are logged once and fall through.
    */
   override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+    val keyCode = event.keyCode
     val isVolumeKey =
-      event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN ||
-        event.keyCode == KeyEvent.KEYCODE_VOLUME_UP
-    if (!volumeKeysCaptured || !isVolumeKey) return super.dispatchKeyEvent(event)
-    if (event.action == KeyEvent.ACTION_DOWN) {
-      val direction = if (event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) "next" else "prev"
-      // Keep the event name in step with platform/volume-keys.ts.
-      findWebView(findViewById(android.R.id.content))?.evaluateJavascript(
-        "window.dispatchEvent(new CustomEvent('ra-volume-step', { detail: '$direction' }));",
-        null,
-      )
+      keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP
+    // A web volume-key claim wins the rocker. Hardware page keys still turn pages.
+    if (volumeKeysCaptured && isVolumeKey) {
+      if (event.action == KeyEvent.ACTION_DOWN) dispatchReaderEvent("ra-volume-step", volumeDirection(keyCode))
+      return true
     }
-    return true
+    if (readerPageKeysCaptured) {
+      val direction = ReaderKeys.pageTurn(keyCode, OnyxEink.isDevice)
+      if (direction != null) {
+        if (event.action == KeyEvent.ACTION_DOWN) {
+          // Keep the event name in step with platform/page-keys.ts.
+          dispatchReaderEvent("ra-page-turn", direction)
+          findViewById<View>(android.R.id.content)?.let { OnyxEink.notePageTurn(it) }
+        }
+        // Consume up as well so the WebView cannot also scroll, and so the
+        // volume HUD stays hidden when the rocker is paging.
+        return true
+      }
+      // Leaf 5's case keys were not captured on hardware here. A single
+      // log line per press is enough to map an unexpected code later.
+      if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+        Log.i("ReadAwareKeys", "reader key not mapped keyCode=$keyCode scanCode=${event.scanCode}")
+      }
+    }
+    return super.dispatchKeyEvent(event)
+  }
+
+  private fun volumeDirection(keyCode: Int): String =
+    if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) ReaderKeys.NEXT else ReaderKeys.PREV
+
+  /** `detail` is one of the fixed direction tokens, never external input. */
+  private fun dispatchReaderEvent(name: String, direction: String) {
+    findWebView(findViewById(android.R.id.content))?.evaluateJavascript(
+      "window.dispatchEvent(new CustomEvent('$name', { detail: '$direction' }));",
+      null,
+    )
+  }
+
+  /** Stamp the e-ink flag once the document exists, plus the density the shell measured. */
+  private fun markEinkDocument() {
+    val density = OnyxDisplay.appliedDensityDpi
+    val ppi = OnyxDisplay.physicalPpi
+    val js = buildString {
+      append("document.documentElement&&(document.documentElement.dataset.eink='1'")
+      if (density > 0) append(",document.documentElement.dataset.einkDensity='$density'")
+      if (ppi > 0) append(",document.documentElement.dataset.einkPpi='$ppi'")
+      append(");")
+    }
+    val root = findViewById<View>(android.R.id.content) ?: return
+    fun attempt(left: Int) {
+      val webView = findWebView(root)
+      if (webView != null) {
+        webView.evaluateJavascript(js, null)
+        return
+      }
+      if (left > 0) root.postDelayed({ attempt(left - 1) }, 50)
+    }
+    attempt(20)
   }
 
   private fun installBookPickBridge() {

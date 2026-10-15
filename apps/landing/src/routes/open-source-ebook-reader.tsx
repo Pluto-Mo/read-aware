@@ -67,7 +67,7 @@ export const Route = createFileRoute("/open-source-ebook-reader")({
       <p>
         Sandboxed plugins from the built-in marketplace add read-aloud voices, dictionaries, reading themes, and feeds
         that read like books — and a plugin can hand the assistant a new tool it simply starts using. The plugin system
-        is part of the same open codebase, with a <Link to="/docs/plugins">documented public API</Link>.
+        is part of the same open codebase, with a <Link to="/docs/plugins/">documented public API</Link>.
       </p>
     </TopicPage>
   ),

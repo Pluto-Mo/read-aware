@@ -22,8 +22,10 @@ function definitionOptions(definition: SettingDefinition, draft: SettingsDraft):
 
 function activeOverrides(draft: SettingsDraft, section?: SettingsSection): SettingsOverrideSummary[] {
   if (section && section !== "reading") return [];
+  // Only book-targetable paths can be shadowed; device-local reading paths
+  // (page-turn input) are never part of a book override.
   const paths = buildSettingDefinitions(draft)
-    .filter((definition) => definition.section === "reading")
+    .filter((definition) => definition.section === "reading" && definition.supportedTargets?.includes("book"))
     .map((definition) => definition.path);
   return Object.entries(draft.readerOverrides)
     .filter(([, override]) => override.scope === "book")
@@ -82,6 +84,7 @@ function cloneDraft(draft: SettingsDraft): SettingsDraft {
     shortcuts: { ...draft.shortcuts, bindings: { ...draft.shortcuts.bindings } },
     appearance: { ...draft.appearance },
     reading: { ...draft.reading },
+    pageTurn: { ...draft.pageTurn },
     bookLanguages: draft.bookLanguages,
     contentTypography: { ...draft.contentTypography },
     defaultMarkColor: draft.defaultMarkColor,
@@ -125,6 +128,7 @@ function mutableFingerprint(draft: SettingsDraft): string {
     shortcuts: draft.shortcuts.bindings,
     appearance: draft.appearance,
     reading: draft.reading,
+    pageTurn: draft.pageTurn,
     contentTypography: draft.contentTypography,
     defaultMarkColor: draft.defaultMarkColor,
     updateChannel: draft.updateChannel,

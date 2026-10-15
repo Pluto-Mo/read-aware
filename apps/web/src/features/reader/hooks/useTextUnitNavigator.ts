@@ -12,10 +12,9 @@ import { waitForReadingPaint } from "../lib/reading-engine-adapter";
 import { resolveTextUnitPosition, textUnitContinuesBeyondPage, textUnitOnPage } from "../lib/text-unit-position";
 import { readingRuntime } from "../../../domain/reading-runtime";
 import { causalActor, type DomainActor } from "../../../platform/domain-actor";
-import { isEditableKeyTarget } from "../../../platform/app-keydown";
 import { readingRenderActor, readingRenderContext } from "../lib/reading-render-context";
 import type { RegisteredReaderMode } from "../../plugins/lib/plugin-types";
-import { setVolumeKeyCapture, VOLUME_STEP_EVENT, type VolumeStepDirection } from "../../../platform/volume-keys";
+import { useVolumeKeySteps } from "./useVolumeKeySteps";
 import type { FoliateRelocateDetail, FoliateView } from "../lib/foliate-engine";
 import { applyNavigatorHighlight, removeNavigatorHighlight } from "../lib/highlight-renderer";
 import {
@@ -917,37 +916,8 @@ export function useTextUnitNavigator({
   ]);
 
   // Android: while the mode is on, the volume keys step units (volume
-  // down = forward). The shell captures them only for the mode's duration and
-  // relays presses as VOLUME_STEP_EVENT; off Android both calls no-op.
-  useEffect(() => {
-    if (!active) return;
-    // The shell consumes captured presses before the page sees them, so the
-    // keys must be handed back while a note editor or chat composer has focus.
-    // Otherwise typing leaves the volume buttons dead: no step and no volume.
-    let captured = false;
-    const syncCapture = () => {
-      const wanted = !isEditableKeyTarget(document.activeElement);
-      if (wanted === captured) return;
-      captured = wanted;
-      setVolumeKeyCapture(wanted);
-    };
-    const onVolumeStep = (event: Event) => {
-      // A press that raced the focus change still must not type over the field.
-      if (isEditableKeyTarget(document.activeElement)) return;
-      const direction = (event as CustomEvent<VolumeStepDirection>).detail;
-      step(direction === "prev" ? -1 : 1);
-    };
-    syncCapture();
-    window.addEventListener(VOLUME_STEP_EVENT, onVolumeStep);
-    document.addEventListener("focusin", syncCapture);
-    document.addEventListener("focusout", syncCapture);
-    return () => {
-      window.removeEventListener(VOLUME_STEP_EVENT, onVolumeStep);
-      document.removeEventListener("focusin", syncCapture);
-      document.removeEventListener("focusout", syncCapture);
-      if (captured) setVolumeKeyCapture(false);
-    };
-  }, [active, step]);
+  // down = forward unless the reader flipped the keys in page-turn settings).
+  useVolumeKeySteps(active, step);
 
   const next = useCallback(() => step(1), [step]);
   const prev = useCallback(() => step(-1), [step]);

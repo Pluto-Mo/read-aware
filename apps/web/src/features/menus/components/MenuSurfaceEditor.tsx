@@ -17,6 +17,7 @@ import { renderPluginIcon } from "../../plugins/lib/plugin-icons";
 import { headerActionsAtom, selectionActionsAtom, textUnitReaderModeAtom } from "../../plugins/state/plugin-store";
 import { CORE_MENU_ITEMS } from "../lib/menu-registry";
 import {
+  CORE_OVERFLOW_DEFAULTS,
   menuConfigAtom,
   pluginMenuId,
   resetSurfaceLayout,
@@ -88,6 +89,7 @@ export function MenuSurfaceEditor({ surface }: { surface: MenuSurface }) {
     config[surface],
     [...coreItems.map((item) => item.id), ...pluginItems.map((item) => item.id)],
     {
+      defaultOverflowIds: CORE_OVERFLOW_DEFAULTS[surface],
       defaultVisibleIds:
         surface === "selection"
           ? selectionActions.filter((action) => action.role === "lookup").map((action) => pluginMenuId(action.key))

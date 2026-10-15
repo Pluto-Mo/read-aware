@@ -127,6 +127,58 @@ export async function runPaginatorRegressions(PaginatorClass: typeof Paginator):
     },
   );
 
+  await check("a touch settles only a drag, so a turn made by a tap keeps its page", async () => {
+    const urls = [page("Tap to turn ".repeat(1500))],
+      renderer = mount();
+    const frame = () =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    const touch = (type: string, screenX: number) => {
+      const point = new Touch({
+        identifier: 1,
+        target: renderer,
+        screenX,
+        screenY: 300,
+        clientX: screenX,
+        clientY: 300,
+      });
+      const ended = type === "touchend";
+      renderer.dispatchEvent(
+        new TouchEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          touches: ended ? [] : [point],
+          changedTouches: [point],
+        }),
+      );
+    };
+    try {
+      renderer.setAttribute("flow", "paginated");
+      renderer.open({ sections: [{ id: 0, size: 20000, load: () => urls[0] }] });
+      await renderer.goTo({ index: 0, context: {} });
+      await renderer.next();
+      const before = renderer.page;
+      // A tap: no movement, and the click it produces turns the page between
+      // the lift and the frame where a drag would settle.
+      touch("touchstart", 500);
+      touch("touchend", 500);
+      await renderer.next();
+      await frame();
+      await frame();
+      equal(renderer.page, before + 1);
+      // A short, slow-enough drag still settles back onto the page it left.
+      const resting = renderer.start;
+      touch("touchstart", 500);
+      touch("touchmove", 490);
+      touch("touchend", 490);
+      equal(renderer.start === resting, false);
+      await frame();
+      await frame();
+      equal(renderer.start, resting);
+    } finally {
+      dispose(renderer, urls);
+    }
+  });
+
   await check("page boundaries skip non-linear sections and remain usable after a failed load", async () => {
     const urls = ["First", "Footnote", "Last"].map((text) => page(text));
     let fail = true;

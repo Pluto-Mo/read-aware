@@ -6,7 +6,8 @@
     "remove": "移除",
     "delete": "刪除",
     "close": "關閉",
-    "done": "完成"
+    "done": "完成",
+    "importFolder": "匯入資料夾"
   },
   "books_other": "{{count}} 本書",
   "workspace": {
@@ -18,7 +19,10 @@
   },
   "importNotice": {
     "duplicate_other": "已略過書庫中已存在的 {{count}} 本書。",
-    "combined": "{{skipped}} 已匯入 {{count}} 本新書。"
+    "combined": "{{skipped}} 已匯入 {{count}} 本新書。",
+    "failedTitle": "有些書未能匯入",
+    "failed_one": "《{{title}}》無法匯入。",
+    "failed_other": "{{count}} 本書無法匯入，包括《{{title}}》。"
   },
   "importDialog": {
     "title": "匯入書籍",
@@ -127,5 +131,17 @@
   },
   "dragDock": {
     "newCollectionTitle_other": "為 {{count}} 本書建立新收藏"
+  },
+  "folderImport": {
+    "dialogTitle": "選擇一個書籍資料夾",
+    "doneTitle": "已匯入「{{folder}}」",
+    "doneTitleMany_one": "已匯入 {{count}} 個資料夾",
+    "doneTitleMany_other": "已匯入 {{count}} 個資料夾",
+    "imported_one": "新增 {{count}} 本書。",
+    "imported_other": "新增 {{count}} 本書。",
+    "duplicates_one": "{{count}} 本已在書架上。",
+    "duplicates_other": "{{count}} 本已在書架上。",
+    "agentHint": "想按原本的資料夾分組，可以請 Agent 幫你整理。",
+    "empty": "「{{folder}}」裡沒有可匯入的書。"
   }
 }

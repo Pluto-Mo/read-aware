@@ -7,6 +7,7 @@ import {
   GearSix,
   ListChecks,
   Plus,
+  FolderPlus,
   Rows,
   SquaresFour,
   Stack,
@@ -48,6 +49,7 @@ export const GROUP_ORDER: readonly CommandGroupKey[] = ["goto", "shelf", "plugin
 
 export type CommandActions = {
   importBook: () => void;
+  importFolder: () => void;
 };
 
 export type CommandContext = {
@@ -127,6 +129,15 @@ export function buildCommands(ctx: CommandContext, t: TFunction<"command">): Com
     keywords: t("actions.import.keywords"),
     icon: icon(Plus),
     perform: ctx.importBook,
+  });
+  items.push({
+    id: "import-folder",
+    kind: "action",
+    group: "shelf",
+    title: t("actions.importFolder.title"),
+    keywords: t("actions.importFolder.keywords"),
+    icon: icon(FolderPlus),
+    perform: ctx.importFolder,
   });
   items.push({
     id: "select",

@@ -54,7 +54,7 @@ export const Route = createFileRoute("/epub-reader-for-windows")({
 
       <h2>Your desktop reading, on your phone too</h2>
       <p>
-        ReadAware also runs on macOS, Linux, and <Link to="/epub-reader-for-android">Android</Link>. With the optional
+        ReadAware also runs on macOS, Linux, and <Link to="/epub-reader-for-android/">Android</Link>. With the optional
         sync plan, your books, highlights, and place in each of them follow you between machines, end-to-end encrypted —
         the relay only ever stores ciphertext.
       </p>

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_READER_SETTINGS, type ReaderParagraphSpacing } from "./reader-settings";
+import { DEFAULT_READER_SETTINGS, migrateEinkReading, type ReaderParagraphSpacing } from "./reader-settings";
 import { BUILTIN_READER_PALETTES } from "./reader-theme";
-import { buildReaderContentCss, getReaderPreviewStyle } from "./reader-css";
+import { buildReaderContentCss, getReaderPreviewStyle, readerBodyFontSize, readerLayoutSpacing } from "./reader-css";
 
 describe("buildReaderContentCss", () => {
   const build = (fontFaceCss?: string) =>
@@ -91,6 +91,63 @@ describe("buildReaderContentCss", () => {
     expect(css).toContain('aside[role~="doc-footnote"]');
     // Section-level notes are whole endnote pages — they must stay visible.
     expect(css).not.toContain("section[epub|type");
+  });
+});
+
+describe("readerBodyFontSize", () => {
+  test("keeps the phone ladder off an e-ink panel", () => {
+    expect(readerBodyFontSize("medium")).toBe("1.0625rem");
+    expect(readerBodyFontSize("x-large")).toBe("1.3125rem");
+  });
+
+  test("uses a ladder whose floor is 16px and whose x-large step is 36px on e-ink", () => {
+    const host = globalThis as { document?: { documentElement: { dataset: { eink?: string } } } };
+    const previous = host.document;
+    host.document = { documentElement: { dataset: { eink: "1" } } };
+    try {
+      expect(readerBodyFontSize("xx-small")).toBe("1rem");
+      expect(readerBodyFontSize("x-large")).toBe("2.25rem");
+      expect(readerBodyFontSize("xxx-large")).toBe("3rem");
+    } finally {
+      host.document = previous;
+    }
+  });
+});
+
+describe("migrateEinkReading", () => {
+  test("bumps a saved phone medium to the e-ink default size and a bolder weight", () => {
+    const next = migrateEinkReading({
+      fontSize: "medium" as const,
+      fontWeight: "medium" as const,
+    });
+    expect(next.fontSize).toBe("x-large");
+    expect(next.fontWeight).toBe("semibold");
+  });
+
+  test("leaves an explicit larger size and an explicit bold weight", () => {
+    const kept = migrateEinkReading({ fontSize: "xx-large" as const, fontWeight: "bold" as const });
+    expect(kept.fontSize).toBe("xx-large");
+    expect(kept.fontWeight).toBe("bold");
+  });
+});
+
+describe("readerLayoutSpacing", () => {
+  test("keeps the desktop page clearance", () => {
+    expect(readerLayoutSpacing("narrow", "paginated-single").margin).toBe("48px");
+  });
+
+  test("tightens vertical clearance on an e-ink panel", () => {
+    const host = globalThis as { document?: { documentElement: { dataset: { eink?: string } } } };
+    const previous = host.document;
+    host.document = { documentElement: { dataset: { eink: "1" } } };
+    try {
+      expect(readerLayoutSpacing("narrow", "paginated-single")).toMatchObject({
+        margin: "12px",
+        gap: "3%",
+      });
+    } finally {
+      host.document = previous;
+    }
   });
 });
 

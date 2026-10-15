@@ -1,13 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { dragCarriesBooks } from "../../shelf/lib/book-drag";
-import { BOOK_FILE_EXTENSIONS } from "../lib/pick-book-files";
+import { collectDroppedBooks, isImportableBookName, type DroppedEntry } from "../lib/folder-import";
 import type { BookImportSource } from "../lib/library-types";
+import type { ImportBatch } from "./useBookImport";
 
-function isBookFile(file: File): boolean {
-  const dot = file.name.lastIndexOf(".");
-  if (dot < 0) return false;
-  const ext = file.name.slice(dot + 1).toLowerCase();
-  return (BOOK_FILE_EXTENSIONS as readonly string[]).includes(ext);
+/**
+ * What an OS drop brings: loose books, and books in dropped folders (with
+ * their place in them). The transfer is read synchronously — its items are
+ * only readable while the drop event is being dispatched — and the folder
+ * walk continues from the captured entries. Without the entries API only
+ * the loose files are visible, which still import as before.
+ */
+function droppedBooks(transfer: DataTransfer | null): Promise<{ sources: BookImportSource[]; folders: string[] }> {
+  const entries: DroppedEntry[] = Array.from(transfer?.items ?? []).flatMap((item) => {
+    const entry = item.kind === "file" && typeof item.webkitGetAsEntry === "function" ? item.webkitGetAsEntry() : null;
+    return entry ? [entry] : [];
+  });
+  if (entries.length > 0) return collectDroppedBooks(entries);
+  const files = Array.from(transfer?.files ?? []).filter((file) => isImportableBookName(file.name));
+  return Promise.resolve({ sources: files.map((file) => ({ kind: "file" as const, file })), folders: [] });
 }
 
 /**
@@ -21,9 +32,14 @@ function isBookFile(file: File): boolean {
  * Returns whether a file drag is currently hovering the window (drives the
  * drop overlay).
  */
-export function useDropBookImport(importSources: (sources: BookImportSource[]) => Promise<unknown>): boolean {
+export function useDropBookImport(
+  importSources: (sources: BookImportSource[], batch?: ImportBatch) => Promise<unknown>,
+  reportError: (error: unknown) => void,
+): boolean {
   const importRef = useRef(importSources);
   importRef.current = importSources;
+  const reportRef = useRef(reportError);
+  reportRef.current = reportError;
   const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
@@ -55,9 +71,14 @@ export function useDropBookImport(importSources: (sources: BookImportSource[]) =
       event.preventDefault();
       depth = 0;
       setDragActive(false);
-      const files = Array.from(event.dataTransfer?.files ?? []).filter(isBookFile);
-      if (files.length === 0) return;
-      void importRef.current(files.map((file) => ({ kind: "file" as const, file })));
+      // Loose books import as they are; a dropped folder is walked like a
+      // folder import, its books carrying their place in it.
+      void droppedBooks(event.dataTransfer)
+        .then(({ sources, folders }) => {
+          if (sources.length === 0) return;
+          return importRef.current(sources, folders.length > 0 ? { folders } : undefined);
+        })
+        .catch((error: unknown) => reportRef.current(error));
     }
 
     // A plugin target stops bubbling so it cannot also import into the shelf.

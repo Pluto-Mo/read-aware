@@ -3,8 +3,9 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, type CSSProperties,
 import { useReaderFocusTarget } from "../hooks/useReaderFocusTarget";
 import { useAtomValue } from "jotai";
 import type { ReadingModeSnapshot } from "@read-aware/core";
-import { CaretLeft, ChatCircle, ListBullets, ListChecks, Notebook, TextAa } from "@phosphor-icons/react";
+import { BookOpen, CaretLeft, ChatCircle, ListBullets, ListChecks, Notebook, TextAa } from "@phosphor-icons/react";
 import { cn } from "@read-aware/ui/cn";
+import { useEinkDocument } from "@read-aware/ui/media";
 import { useReaderResponsiveLayout } from "../hooks/useReaderResponsiveLayout";
 import {
   Body,
@@ -18,6 +19,7 @@ import {
   type VirtualRowsHandle,
 } from "@read-aware/ui";
 import { describeError, formatPercent, useLocale, useTranslation } from "../../../i18n";
+import { openInSystemReader } from "../../../platform/system-reader";
 import { createLogger } from "../../../platform/logger";
 import { ChatPanel } from "../../ai/components/ChatPanel";
 import { useBookAnnotations } from "../../annotations/hooks/useBookAnnotations";
@@ -135,6 +137,10 @@ export function ReaderShellOverlay({
   // Phone-width sheets and the appearance popover are transient: they close
   // with the chrome and never come back on their own.
   const { exclusive: isPhone, origin: layoutOrigin } = useReaderResponsiveLayout();
+  const eink = useEinkDocument();
+  // Exclusive sheets still fit a 7" page. The phone bottom toolbar does not:
+  // actions stay in the top bar, the way a native reader keeps one slim strip.
+  const phoneChrome = isPhone && !eink;
   const {
     toc: tocOpen,
     chat: notesOpen,
@@ -268,7 +274,7 @@ export function ReaderShellOverlay({
     "core:chat": toggleNotes,
     "core:appearance": () => setAppearanceOpen(true),
   };
-  const menuSurface = isPhone ? "readerToolbar" : "readerHeader";
+  const menuSurface = phoneChrome ? "readerToolbar" : "readerHeader";
   const toOverflowEntry = (id: string): MenuOverflowEntry | null => {
     if (id.startsWith("plugin:")) {
       const action = readerPluginActions.find((entry) => pluginMenuId(entry.key) === id);
@@ -316,6 +322,33 @@ export function ReaderShellOverlay({
     .map(toOverflowEntry)
     .filter((entry): entry is MenuOverflowEntry => entry !== null);
 
+  const systemReaderBusy = useRef(false);
+  const openSystemReader = () => {
+    if (systemReaderBusy.current || book.format === "virtual") return;
+    systemReaderBusy.current = true;
+    void openInSystemReader({ bookId: book.id, fileName: book.fileName, mimeType: book.mimeType })
+      .then((status) => {
+        if (status === "opened") return;
+        const description =
+          status === "missing"
+            ? t("openInSystemReaderMissing")
+            : status === "unavailable"
+              ? t("openInSystemReaderUnavailable")
+              : t("openInSystemReaderFailed");
+        log.error("system reader handoff", status);
+        toast({ variant: "destructive", description });
+      })
+      .catch((error: unknown) => {
+        log.error("system reader handoff failed", error);
+        toast({
+          variant: "destructive",
+          description: t("openInSystemReaderFailed"),
+        });
+      })
+      .finally(() => {
+        systemReaderBusy.current = false;
+      });
+  };
   const removeAnnotationReporting = (id: string) =>
     void removeAnnotation(id).catch((error) => {
       log.error("failed to remove annotation", error);
@@ -344,7 +377,7 @@ export function ReaderShellOverlay({
   // Phone widths: the arranged toolbar items render in order while they fit
   // the width; the rest, and everything arranged into overflow, sit behind
   // the top bar's "More".
-  const { rowRef: toolbarRowRef, capacity: toolbarCapacity } = useToolbarSlotCapacity(isPhone);
+  const { rowRef: toolbarRowRef, capacity: toolbarCapacity } = useToolbarSlotCapacity(phoneChrome);
   const toolbarInline = toolbarLayout.visible.slice(0, toolbarCapacity);
   const toolbarModePickerEntry: MenuOverflowEntry | null =
     toolbarInline.includes("core:navigator") && textUnitModeAvailable && canSelectMode && modeSnapshot
@@ -446,12 +479,12 @@ export function ReaderShellOverlay({
         return null;
     }
   };
-  const toolbarSlots = isPhone ? toolbarInline.map(toolbarNode).filter((node) => node !== null) : [];
+  const toolbarSlots = phoneChrome ? toolbarInline.map(toolbarNode).filter((node) => node !== null) : [];
   // Phones open appearance and notes in the bottom bar's drawer, whether
   // their icon is in the toolbar or in "More". The desktop header needs a
   // dialog for appearance once it is arranged into the overflow menu.
-  const appearanceDialog = !isPhone && !readerLayout.visible.includes("core:appearance");
-  const drawer: ReaderDrawer | null = !isPhone
+  const appearanceDialog = !phoneChrome && !readerLayout.visible.includes("core:appearance");
+  const drawer: ReaderDrawer | null = !phoneChrome
     ? null
     : appearanceOpen
       ? "appearance"
@@ -515,7 +548,7 @@ export function ReaderShellOverlay({
   });
   // A phone sheet ends at the bottom toolbar, which already clears the home
   // indicator, so nothing inside it should pad for that inset again.
-  const phoneSheetInsets = isPhone ? ({ "--ra-safe-bottom": "0px" } as CSSProperties) : undefined;
+  const phoneSheetInsets = phoneChrome ? ({ "--ra-safe-bottom": "0px" } as CSSProperties) : undefined;
 
   // Reveal the current chapter when the contents panel opens (or the chapter
   // changes while it's open), centering it so it's easy to find.
@@ -628,11 +661,11 @@ export function ReaderShellOverlay({
       >
         {/* On phones the progress scrubber takes hold of the whole header
             behind this row; lifting the row keeps its buttons' taps. */}
-        <div className={cn("pointer-events-none flex h-full items-center gap-3", isPhone && "relative z-[1]")}>
+        <div className={cn("pointer-events-none flex h-full items-center gap-3", phoneChrome && "relative z-[1]")}>
           {/* Phones keep back to the left of the title and "More" to its
               right; everything else lives in the bottom toolbar. Equal-width
               sides keep the title centered even when "More" has nothing. */}
-          {isPhone && (
+          {phoneChrome && (
             <div className="flex w-9 shrink-0 items-center">
               <IconButton
                 label={t("backToShelf")}
@@ -644,7 +677,7 @@ export function ReaderShellOverlay({
           )}
 
           {/* Left cluster: back to shelf + contents toggle. */}
-          {!isPhone && (
+          {!phoneChrome && (
             <div className="ml-2 flex shrink-0 items-center gap-0.5">
               <Tooltip content={t("shelf")} side="bottom" className="pointer-events-auto">
                 <IconButton
@@ -676,7 +709,7 @@ export function ReaderShellOverlay({
                   `text-*` size token when a `text-*` color is also present. */}
               {/* Phones name the chapter there too; the percentage keeps
                   its place when a long chapter name truncates. */}
-              {isPhone && currentChapterLabel ? (
+              {phoneChrome && currentChapterLabel ? (
                 <span className="mt-0.5 flex justify-center gap-1 font-sans text-[11px] leading-none text-fg-subtle">
                   <span className="min-w-0 truncate">{currentChapterLabel}</span>
                   {percent != null && (
@@ -698,12 +731,12 @@ export function ReaderShellOverlay({
 
           {/* Right cluster: user-arranged (navigator/appearance/chat + plugin
               items), remainder behind the vertical-dots overflow. */}
-          {isPhone && (
+          {phoneChrome && (
             <div className="flex w-9 shrink-0 items-center justify-end">
               <MenuOverflow entries={toolbarOverflowEntries} className="pointer-events-auto" />
             </div>
           )}
-          {!isPhone && (
+          {!phoneChrome && (
             <div className="flex shrink-0 items-center justify-end gap-0.5">
               {readerLayout.visible.map((id) => {
                 if (id.startsWith("plugin:")) {
@@ -724,6 +757,16 @@ export function ReaderShellOverlay({
                   </span>
                 ) : null;
               })}
+              {eink && book.format !== "virtual" && (
+                <Tooltip content={t("openInSystemReader")} side="bottom" className="pointer-events-auto">
+                  <IconButton
+                    size="sm"
+                    label={t("openInSystemReader")}
+                    onClick={openSystemReader}
+                    icon={<BookOpen size={18} weight="regular" aria-hidden="true" />}
+                  />
+                </Tooltip>
+              )}
               <MenuOverflow entries={readerOverflowEntries} className="pointer-events-auto" />
             </div>
           )}
@@ -737,7 +780,7 @@ export function ReaderShellOverlay({
           totalPages={totalPages}
           marks={progressMarks}
           onSeek={onSeek}
-          hitArea={isPhone ? "header" : "edge"}
+          hitArea={phoneChrome ? "header" : "edge"}
         />
       </div>
 
@@ -838,7 +881,7 @@ export function ReaderShellOverlay({
         </section>
       </div>
 
-      {isPhone && (
+      {phoneChrome && (
         <ReaderBottomBar
           visible={visible}
           drawerId={drawerId}

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import type { TFunction } from "i18next";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { Spinner, useToast } from "@read-aware/ui";
 import { AppError } from "@read-aware/core";
 import { cn } from "@read-aware/ui/cn";
 import { ReaderFailureView } from "./ReaderFailureView";
 import { describeError, useTranslation } from "../../../i18n";
-import { textUnitModeSettingsAtom } from "../../../state/ui";
+import { pageTurnSettingsAtom, textUnitModeSettingsAtom } from "../../../state/ui";
 import { appShortcutForEvent, isAppSurfaceShortcut } from "../../settings/lib/shortcut-dispatch";
 import type { LibraryBook, ReaderProgress } from "../../library/lib/library-types";
 import { emitAppEvent } from "../../../platform/app-events";
@@ -80,6 +80,7 @@ import { useReaderHoldMenu } from "../hooks/useReaderHoldMenu";
 import { useTextUnitHoldActions } from "../hooks/useTextUnitHoldActions";
 import { resolveDrawnRangeTap } from "../lib/content-tap";
 import { forwardKeyDownToApp, isEditableKeyTarget } from "../../../platform/app-keydown";
+import { PAGE_TURN_EVENT, setOnyxLockCover, setReaderKeepAwake, setReaderPageKeyCapture } from "../../../platform/page-keys";
 import { subscribeWheelPhaseEdges } from "../../../platform/wheel-phase";
 import { useDelayedFlag } from "../hooks/useDelayedFlag";
 import { useReaderTypography } from "../hooks/useReaderTypography";
@@ -127,7 +128,14 @@ import { rememberReaderBookLanguage } from "../../settings/lib/reader-languages"
 import { getReaderPreferences, readerPreferencesForLanguage } from "../../settings/lib/reader-settings";
 import { getReaderOverrides } from "../../settings/lib/reader-overrides";
 import { readerChapterStarts, markReaderChapterStarts, normalizeReaderTextSizes } from "../lib/reader-document-layout";
-import { framePointAnchorInRoot, measureSectionToRoot, visibleFrameRectInRoot } from "../lib/frame-geometry";
+import {
+  framePointAnchorInRoot,
+  framePointToRoot,
+  measureSectionToRoot,
+  visibleFrameRectInRoot,
+} from "../lib/frame-geometry";
+import { resolvePageTurnTap, type PageTurnTap } from "../lib/page-turn-tap";
+import { useVolumeKeySteps } from "../hooks/useVolumeKeySteps";
 import type { ReaderEngineSession } from "../lib/reader-engine-session";
 import { useReaderEngineSession } from "../hooks/useReaderEngineSession";
 
@@ -237,6 +245,8 @@ const HOLD_MENU_HINT_KEY = "read-aware-hold-menu-hint";
  *  the OS preference when motion is left on `system`. */
 function prefersReducedMotion(): boolean {
   if (typeof document === "undefined") return false;
+  // E-ink partials ghost through Foliate's 300ms page glide.
+  if (document.documentElement.dataset.eink === "1") return true;
   if (document.documentElement.dataset.motion === "reduced") return true;
   return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
@@ -1147,6 +1157,43 @@ export function FoliateReaderView({
     else textUnitNavigator.prev();
   });
 
+  // ----- page-turn input preferences ----------------------------------------
+
+  const pageTurnSettings = useAtomValue(pageTurnSettingsAtom);
+
+  /** The page turn a content click at this section point asks for under the
+   *  tap-zone preference, or null (zones off, or the center band). Zones are
+   *  measured across the whole reader, so a spread's two pages share them. */
+  const pageTurnTapAt = useEffectEvent((doc: Document, event: MouseEvent): PageTurnTap | null => {
+    if (pageTurnSettings.tapZones === "off") return null;
+    const mapping = measureSectionToRoot(doc, readerRootRef.current);
+    if (!mapping) return null;
+    const point = framePointToRoot({ x: event.clientX, y: event.clientY }, mapping);
+    return resolvePageTurnTap({
+      x: point.x,
+      width: mapping.rootRect.width,
+      zones: pageTurnSettings.tapZones,
+      zoneWidth: pageTurnSettings.tapZoneWidth,
+      rtl: viewRef.current?.book?.dir === "rtl",
+    });
+  });
+
+  /** Turn as the arrow keys do: a zoomed fixed-layout page pans a screenful
+   *  toward the turn first, and reading on from the last page opens the
+   *  completion screen (turnPage asks isAtEndOfBook). */
+  const turnPageByTap = useEffectEvent((tap: PageTurnTap) => {
+    if (fixedLayoutZoom.panByKey("x", tap.side)) return;
+    void turnPage(tap.step);
+  });
+
+  // Android volume keys turn pages while the preference is on, exactly like
+  // ArrowDown/ArrowUp. An active text-unit mode claims the keys for stepping
+  // instead (useTextUnitNavigator), so the two never hold them at once.
+  useVolumeKeySteps(pageTurnSettings.volumeKeys && !textUnitModeEngineActive && !isLoading && !error, (step) => {
+    if (!loadedBookRef.current) return;
+    if (!fixedLayoutZoom.panByKey("y", step)) void turnPage(step);
+  });
+
   // ----- wheel / touch navigation routing -----------------------------------
 
   // Discrete-gesture state for the wheel stream, shared by every surface the
@@ -1538,9 +1585,10 @@ export function FoliateReaderView({
       return;
     }
 
-    // A tap on book content only toggles the reader shell — it never turns
-    // the page. Page turns use the wheel, swipe, keyboard or page controls, so a
-    // stray click while reading can't cost you your place.
+    // By default a tap on book content only toggles the reader shell — it
+    // never turns the page. Page turns use the wheel, swipe, keyboard or page
+    // controls, so a stray click while reading can't cost you your place; tap
+    // zones that turn pages are an opt-in reading preference (below).
     cancelPendingShellToggle();
 
     // Closing needs no double-click guard. The guard exists solely to stop a
@@ -1562,6 +1610,16 @@ export function FoliateReaderView({
     // open closes it first and the next tap steps.
     if (textUnitModeEngineActive && textUnitModeSettings.tapToAdvance) {
       stepTextUnit(1);
+      return;
+    }
+
+    // Tap zones (an opt-in reading preference): a quick tap on a side zone
+    // turns the page at once, the center band falls through to the shell
+    // toggle. A word-selecting double-click is disarmed inside the zones by
+    // the mousedown listener, as for tap-to-advance, so no guard is needed.
+    const pageTurnTap = pageTurnTapAt(doc, event);
+    if (pageTurnTap) {
+      turnPageByTap(pageTurnTap);
       return;
     }
 
@@ -1721,18 +1779,20 @@ export function FoliateReaderView({
       true,
     );
 
-    // While tap-to-advance is on, rapid stepping clicks must not turn into a
-    // word-selecting double-click (selection is mousedown's default action at
-    // detail > 1) — except over a drawn range (the navigator's resting wash or
-    // a user mark), where single clicks don't step anyway (the click handler's
-    // hit test routes them to menus), so double-click keeps selecting words
-    // there. Drag and long-press selection still work everywhere.
+    // While a tap steps (tap-to-advance) or turns the page (a tap zone),
+    // rapid clicks must not turn into a word-selecting double-click
+    // (selection is mousedown's default action at detail > 1) — except over a
+    // drawn range (the navigator's resting wash or a user mark), where single
+    // clicks don't step or turn anyway (the click handler's hit test routes
+    // them to menus), so double-click keeps selecting words there. Drag and
+    // long-press selection still work everywhere.
     doc.addEventListener(
       "mousedown",
       (event) => {
-        const gestures = textUnitGestures();
-        if (!gestures.active || !gestures.tapToAdvance) return;
         if (event.detail <= 1) return;
+        const gestures = textUnitGestures();
+        const tapSteps = gestures.active && gestures.tapToAdvance;
+        if (!tapSteps && !pageTurnTapAt(doc, event)) return;
         const hit = viewRef.current?.renderer
           ?.getContents?.()
           .find((content) => content.index === index)
@@ -1880,6 +1940,48 @@ export function FoliateReaderView({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  // Android page-turn keys are consumed in the activity (the WebView would
+  // otherwise scroll them away) and arrive as PAGE_TURN_EVENT. Reuse the
+  // reader key path so zoom-pan and the PageUp/PageDown fallback stay one
+  // implementation. Capture drops while a field is focused, matching volume.
+  useEffect(() => {
+    let captured = false;
+    const syncCapture = () => {
+      const wanted = !isEditableKeyTarget(document.activeElement);
+      if (wanted === captured) return;
+      captured = wanted;
+      setReaderPageKeyCapture(wanted);
+    };
+    const onPageTurn = (event: Event) => {
+      if (isEditableKeyTarget(document.activeElement)) return;
+      const direction = (event as CustomEvent<string>).detail;
+      if (direction !== "next" && direction !== "prev") return;
+      const key = direction === "next" ? "PageDown" : "PageUp";
+      window.dispatchEvent(new KeyboardEvent("keydown", { key, code: key, bubbles: true, cancelable: true }));
+    };
+    syncCapture();
+    setReaderKeepAwake(true);
+    window.addEventListener(PAGE_TURN_EVENT, onPageTurn);
+    document.addEventListener("focusin", syncCapture);
+    document.addEventListener("focusout", syncCapture);
+    return () => {
+      window.removeEventListener(PAGE_TURN_EVENT, onPageTurn);
+      document.removeEventListener("focusin", syncCapture);
+      document.removeEventListener("focusout", syncCapture);
+      if (captured) setReaderPageKeyCapture(false);
+      setReaderKeepAwake(false);
+    };
+  }, []);
+
+  // BOOX captures the standby bitmap as the panel sleeps, so the cover has to
+  // be published while the book is open. Repeated when extraction finishes
+  // (`coverStatus` becomes ready). The last image stays after the reader closes.
+  useEffect(() => {
+    const id = selectedBook?.id;
+    if (!id) return;
+    setOnyxLockCover(id);
+  }, [selectedBook?.id, selectedBook?.coverStatus]);
+
   // Keep the renderer's `animated` flag in sync with the motion preference at
   // runtime (the Reduce-motion toggle flips `data-motion`; the OS pref can change
   // too), so smooth paging turns on/off without reopening the book.
@@ -1890,7 +1992,7 @@ export function FoliateReaderView({
     const observer = new MutationObserver(sync);
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ["data-motion"],
+      attributeFilter: ["data-motion", "data-eink"],
     });
     return () => {
       media?.removeEventListener?.("change", sync);

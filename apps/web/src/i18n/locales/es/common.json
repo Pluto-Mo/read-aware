@@ -200,7 +200,8 @@
     "searchInvalidInput": "Usa una consulta válida o una URL web pública.",
     "searchProvider": "El proveedor devolvió una respuesta inesperada.",
     "searchFetchFailed": "No se pudo leer esta página. Puede requerir iniciar sesión o bloquear el acceso automático.",
-    "searchTooLarge": "Esta página es demasiado grande. Prueba una fuente más pequeña."
+    "searchTooLarge": "Esta página es demasiado grande. Prueba una fuente más pequeña.",
+    "bookFolderTooLarge": "Esta carpeta tiene más de 5000 libros. Elige una carpeta más pequeña e impórtala por partes."
   },
   "crashPrompt": {
     "title": "ReadAware tuvo un problema la última vez",

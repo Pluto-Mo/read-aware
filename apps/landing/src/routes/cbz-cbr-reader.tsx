@@ -47,8 +47,8 @@ export const Route = createFileRoute("/cbz-cbr-reader")({
         On its own, everything is local-first: your comics and your progress live on your device and reading works fully
         offline. With the optional sync plan, the issue you stopped reading on your desktop is open at the same page on
         your phone, end-to-end encrypted in transit — the relay only ever stores ciphertext. ReadAware is open source
-        (AGPL-3.0) and free on <Link to="/epub-reader-for-windows">Windows</Link>, macOS, Linux, and{" "}
-        <Link to="/epub-reader-for-android">Android</Link>.
+        (AGPL-3.0) and free on <Link to="/epub-reader-for-windows/">Windows</Link>, macOS, Linux, and{" "}
+        <Link to="/epub-reader-for-android/">Android</Link>.
       </p>
     </TopicPage>
   ),

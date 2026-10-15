@@ -281,3 +281,16 @@ test("backup drains a staged import through its book event and rejects a fresh n
   expect((await work).status).toBe("imported");
   await backup;
 });
+
+test("folder imports record where the file was found; single files record nothing", async () => {
+  const { commit } = setup();
+  const path: BookImportSource = { kind: "native-path", path: "/books/Sci-fi/book.txt", name: "book.txt", size: 7 };
+  await importBook({ ...path, sourcePath: "books/Sci-fi/book.txt" }, { t, knownBooks: [] });
+  expect(commit.mock.calls[0]?.[0]).toMatchObject({
+    type: "book.imported",
+    payload: { fileName: "book.txt", sourcePath: "books/Sci-fi/book.txt" },
+  });
+  commit.mockClear();
+  await importBook(path, { t, knownBooks: [] });
+  expect(commit.mock.calls[0]?.[0]?.payload).not.toHaveProperty("sourcePath");
+});

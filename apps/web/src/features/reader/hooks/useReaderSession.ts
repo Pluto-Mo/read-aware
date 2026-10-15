@@ -14,6 +14,14 @@ import { AppError } from "@read-aware/core";
 import { readingRuntime } from "../../../domain/reading-runtime";
 import { hostSync } from "../../../services/sync";
 import { useReaderControls } from "./useReaderControls";
+import { isEinkDocument } from "../../../platform/eink";
+import { forgetOpenReader, rememberOpenReader } from "../../../platform/open-reader";
+import {
+  forgetOpenReaderPosition,
+  positionForOpen,
+  rememberOpenReaderPosition,
+  OPEN_READER_POSITION_KEY,
+} from "../lib/open-reader-session";
 
 type ReaderSource = { format: BookFormat; data: LoadedBook } | null;
 
@@ -153,6 +161,10 @@ export function useReaderSession({
       const requestId = readerLoadRequestIdRef.current + 1;
       readerLoadRequestIdRef.current = requestId;
 
+      // Onyx app optimization and engine toggles recreate or kill the activity.
+      // The open book is React state, so remember it before any of that lands.
+      if (isEinkDocument()) rememberOpenReader(book.id);
+
       setSelectedBook(book);
       setShellVisible(false, openingActor);
       resetReaderState();
@@ -229,11 +241,13 @@ export function useReaderSession({
     const closing = traceRef.current;
     const sessionId = readingRuntime.snapshot().sessionId;
     readerLoadRequestIdRef.current += 1;
+    let flushed = false;
     try {
       await closing?.retire();
       if (readingRuntime.snapshot().sessionId !== sessionId) {
         throw new AppError("reader/superseded", "A new session opened during persistence retirement");
       }
+      flushed = true;
     } catch (error) {
       reportError(error);
       throw error;
@@ -246,6 +260,10 @@ export function useReaderSession({
         setSelectedBook(null);
         setShellVisible(false);
         resetReaderState();
+        forgetOpenReader();
+        // Keep the crash snapshot when the flush failed so the next open can
+        // still land on the last page. A successful flush is the projection.
+        if (flushed) forgetOpenReaderPosition();
       }
     }
   }, [reportError, resetReaderState, setShellVisible]);
@@ -280,6 +298,7 @@ export function useReaderSession({
       });
 
       if (!selectedBook) return;
+      if (isEinkDocument()) rememberOpenReaderPosition(selectedBook.id, progress);
       applyReaderProgress(selectedBook.id, progress);
     },
     [applyReaderProgress, selectedBook, setReaderPage],
@@ -327,7 +346,13 @@ export function useReaderSession({
   );
 
   const overlayVisible = shellVisible;
-  const selectedEpubProgress = selectedBook?.progress ?? null;
+  const selectedEpubProgress = selectedBook
+    ? positionForOpen(
+        selectedBook.id,
+        selectedBook.progress,
+        typeof localStorage === "undefined" ? null : localStorage.getItem(OPEN_READER_POSITION_KEY),
+      )
+    : null;
   // The engine's fraction once it has relocated; before that, the position the
   // book was left at (so the bar opens where reading stopped).
   const readerProgress =

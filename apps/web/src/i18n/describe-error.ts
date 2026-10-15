@@ -148,6 +148,7 @@ const CODE_COPY: Record<string, CopyEntry> = {
   "reading/stats-unavailable": { key: "readingTimeUnavailable", retryable: true },
   "reading/stats-observer-limit": { key: "readingTimeLimit", retryable: false },
   "library/invalid-removal": { key: "bookRemovalInvalid", retryable: false },
+  "library/folder-too-large": { key: "bookFolderTooLarge", retryable: false },
   "library/invalid-cleanup-query": { key: "bookCleanupInvalid", retryable: false },
   "library/cleanup-stale": { key: "bookCleanupStale", retryable: true },
   "library/removal-cleanup-pending": { key: "bookRemovalCleanupPending", retryable: false },

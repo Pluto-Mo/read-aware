@@ -104,7 +104,32 @@
       "title": "Couleur de la page",
       "description": "Le papier du livre. Auto suit le thème de l’application ; les autres sont fixes."
     },
-    "pageMargins": "Marges de page"
+    "pageMargins": "Marges de page",
+    "pageTurn": {
+      "title": "Tourner les pages",
+      "description": "Comment les touchers et les boutons tournent les pages. Enregistré sur cet appareil, pour tous les livres.",
+      "tapZones": {
+        "label": "Toucher pour tourner",
+        "off": "Désactivé",
+        "sides": "Gauche recule, droite avance",
+        "forward": "Les deux côtés avancent"
+      },
+      "tapZoneWidth": {
+        "label": "Largeur des zones",
+        "narrow": "Étroite",
+        "medium": "Moyenne",
+        "wide": "Large"
+      },
+      "volumeKeys": {
+        "title": "Tourner les pages avec les touches de volume",
+        "description": "Quand un livre est ouvert, les touches de volume tournent les pages au lieu de régler le volume. Pendant la saisie, elles règlent le volume comme d’habitude."
+      },
+      "volumeKeyDirection": {
+        "label": "Sens des touches de volume",
+        "downForward": "Volume − pour avancer",
+        "upForward": "Volume + pour avancer"
+      }
+    }
   },
   "shortcuts": {
     "title": "Raccourcis",
@@ -671,7 +696,8 @@
       "highlight": "Surligner",
       "underline": "Souligner",
       "addNote": "Ajouter une note",
-      "askAI": "Demander à l IA"
+      "askAI": "Demander à l IA",
+      "importFolder": "Importer un dossier"
     }
   },
   "search": {

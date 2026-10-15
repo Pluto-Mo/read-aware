@@ -55,6 +55,12 @@ import { FIXED_LAYOUT_ZOOM_KEY, getFixedLayoutViews } from "../domain/reading-zo
 import { onAppEvent } from "../platform/app-events";
 import { createLogger } from "../platform/logger";
 import { SHELF_VIEW_KEY, getShelfView, saveShelfView, type ShelfView } from "../features/shelf/lib/shelf-view";
+import {
+  PAGE_TURN_SETTINGS_KEY,
+  getPageTurnSettings,
+  savePageTurnSettings,
+  type PageTurnSettings,
+} from "../domain/settings/page-turn-settings";
 import { getShortcutBindings, SHORTCUT_BINDINGS_KEY } from "../features/settings/lib/shortcut-bindings";
 import type { ShortcutBindings } from "../features/settings/lib/shortcuts";
 import { onLocalKVChange } from "../platform/local-store";
@@ -262,6 +268,9 @@ onLocalKVChange((key, _value, origin) => {
     case SHELF_VIEW_KEY:
       store.set(shelfViewBaseAtom, getShelfView());
       break;
+    case PAGE_TURN_SETTINGS_KEY:
+      store.set(pageTurnSettingsBaseAtom, getPageTurnSettings());
+      break;
     case SHORTCUT_BINDINGS_KEY:
       store.set(shortcutBindingsBaseAtom, getShortcutBindings());
       break;
@@ -323,6 +332,16 @@ export const readingStatsAtom = atom(
 );
 
 const shelfViewBaseAtom = atom<ShelfView>(getShelfView());
+const pageTurnSettingsBaseAtom = atom<PageTurnSettings>(getPageTurnSettings());
+
+/** Tap-zone and volume-key page turning. Device-local, never per book. */
+export const pageTurnSettingsAtom = atom(
+  (get) => get(pageTurnSettingsBaseAtom),
+  (_get, set, next: PageTurnSettings) => {
+    set(pageTurnSettingsBaseAtom, next);
+    savePageTurnSettings(next);
+  },
+);
 
 export const shelfViewAtom = atom(
   (get) => get(shelfViewBaseAtom),

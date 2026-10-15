@@ -81,6 +81,7 @@ const ctx: CommandContext = {
   collections,
   books,
   importBook: noop,
+  importFolder: noop,
 };
 
 const meta = {

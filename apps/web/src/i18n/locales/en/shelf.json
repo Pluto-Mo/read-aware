@@ -6,7 +6,8 @@
     "remove": "Remove",
     "delete": "Delete",
     "close": "Close",
-    "done": "Done"
+    "done": "Done",
+    "importFolder": "Import folder"
   },
   "books_one": "{{count}} book",
   "books_other": "{{count}} books",
@@ -20,7 +21,10 @@
   "importNotice": {
     "duplicate_one": "“{{title}}” is already in your library.",
     "duplicate_other": "Skipped {{count}} books already in your library.",
-    "combined": "{{skipped}} Imported {{count}} new."
+    "combined": "{{skipped}} Imported {{count}} new.",
+    "failedTitle": "Some books weren't imported",
+    "failed_one": "“{{title}}” couldn't be imported.",
+    "failed_other": "{{count}} books couldn't be imported, including “{{title}}”."
   },
   "importDialog": {
     "title": "Import books",
@@ -134,5 +138,17 @@
   "dragDock": {
     "newCollectionTitle_one": "New collection for {{count}} book",
     "newCollectionTitle_other": "New collection for {{count}} books"
+  },
+  "folderImport": {
+    "dialogTitle": "Choose a folder of books",
+    "doneTitle": "Imported “{{folder}}”",
+    "doneTitleMany_one": "Imported {{count}} folder",
+    "doneTitleMany_other": "Imported {{count}} folders",
+    "imported_one": "{{count}} new book.",
+    "imported_other": "{{count}} new books.",
+    "duplicates_one": "{{count}} was already in your library.",
+    "duplicates_other": "{{count}} were already in your library.",
+    "agentHint": "To group them by their original folders, ask the Agent.",
+    "empty": "“{{folder}}” has no books to import."
   }
 }

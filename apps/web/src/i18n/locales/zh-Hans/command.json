@@ -43,6 +43,10 @@
     "goAgent": {
       "title": "问问 ReadAware",
       "keywords": "agent AI 对话 问问 上下文 笔记"
+    },
+    "importFolder": {
+      "title": "导入文件夹",
+      "keywords": "添加 文件夹 目录 批量 书库 import folder"
     }
   },
   "layout": {

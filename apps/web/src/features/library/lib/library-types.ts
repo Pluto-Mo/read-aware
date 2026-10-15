@@ -9,8 +9,16 @@ export type { BookFormat };
  */
 export type BookImportSource =
   | { kind: "native-resource"; resourceId: string; name: string; size: number; type: string }
-  | { kind: "native-path"; path: string; name: string; size: number; externalOpenEpoch?: string }
-  | { kind: "file"; file: File };
+  | {
+      kind: "native-path";
+      path: string;
+      name: string;
+      size: number;
+      externalOpenEpoch?: string;
+      /** Folder imports: the picked folder's name and the path below it (`Books/Sci-fi/Dune.epub`). */
+      sourcePath?: string;
+    }
+  | { kind: "file"; file: File; sourcePath?: string };
 
 export type ReadingStatus = "unread" | "reading" | "finished";
 
@@ -46,6 +54,8 @@ export interface LibraryBookRow {
   fileName: string;
   mimeType: string;
   fileSize: number;
+  /** Folder-relative origin of a folder import; null/absent otherwise. */
+  sourcePath?: string | null;
   coverStatus: CoverStatus;
   /** Blob key of the cover (`cover:<id>`) when `coverStatus` is `ready`. */
   coverBlobKey: string | null;

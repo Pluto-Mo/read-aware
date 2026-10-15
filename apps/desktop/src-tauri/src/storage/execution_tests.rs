@@ -79,6 +79,18 @@ const SYNC_COMMANDS: &[(&str, &str)] = &[
         "set_status_bar_hidden",
         "iOS: the ObjC bridge hops to the main queue itself",
     ),
+    (
+        "book_folder_pick_start",
+        "iOS: the ObjC bridge hops to the main queue itself",
+    ),
+    (
+        "book_folder_pick_poll",
+        "iOS: copies the bridge's parked string; no I/O",
+    ),
+    (
+        "book_folder_release",
+        "iOS: ends a security-scoped grant; no I/O",
+    ),
 ];
 
 /// Async commands that only await non-blocking futures — HTTP clients,

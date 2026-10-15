@@ -10,6 +10,7 @@ import type { TopNav } from "../../../state/ui";
 import { CORE_MENU_ITEMS } from "../../menus/lib/menu-registry";
 import {
   clampPrimaryNavVisible,
+  CORE_OVERFLOW_DEFAULTS,
   menuConfigAtom,
   pluginMenuId,
   resolveSurfaceLayout,
@@ -36,10 +37,11 @@ export function usePrimaryDestinations(): PrimaryDestination[] {
     (action) => action.surface === "shelf" && action.presentation === "page",
   );
 
-  const layout = resolveSurfaceLayout(menuConfig.primaryNav, [
-    ...CORE_MENU_ITEMS.primaryNav.map((item) => item.id),
-    ...pageActions.map((action) => pluginMenuId(action.key)),
-  ]);
+  const layout = resolveSurfaceLayout(
+    menuConfig.primaryNav,
+    [...CORE_MENU_ITEMS.primaryNav.map((item) => item.id), ...pageActions.map((action) => pluginMenuId(action.key))],
+    { defaultOverflowIds: CORE_OVERFLOW_DEFAULTS.primaryNav },
+  );
   const coreLabels: Record<string, string> = {
     "core:library": t("header.library"),
     "core:agent": t("header.agent"),

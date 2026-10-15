@@ -211,6 +211,15 @@ pub fn apply_event(tx: &Transaction<'_>, ev: &EventRow) -> Result<bool, CommandE
                     at,
                 ],
             )?;
+            // Folder provenance only ever adds information: an import that
+            // carries none (single files, genesis backfill) leaves a known
+            // origin alone. Book merges keep the keeper's, like its metadata.
+            if let Some(source_path) = str_of(p, "sourcePath") {
+                tx.execute(
+                    "UPDATE books SET source_path = ?2 WHERE id = ?1",
+                    params![id, source_path],
+                )?;
+            }
             if let Some(key) = str_of(p, "sourceBlobKey") {
                 ensure_blob_manifest(
                     tx,

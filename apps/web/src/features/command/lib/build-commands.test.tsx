@@ -14,6 +14,7 @@ function context(readingBookId: string | null): CommandContext {
     collections: [],
     books: [],
     importBook: noop,
+    importFolder: noop,
   };
 }
 
@@ -41,7 +42,10 @@ describe("buildCommands", () => {
       id: "open-collection",
       args: { collectionId: "c-1" },
     });
-    expect(commands.filter((c) => c.id !== "import").every((c) => c.hostCommand && !c.perform)).toBe(true);
+    // Only the imports stay UI actions: each opens a system picker the user drives.
+    const pickers = new Set(["import", "import-folder"]);
+    expect(commands.filter((c) => !pickers.has(c.id)).every((c) => c.hostCommand && !c.perform)).toBe(true);
     expect(commands.find((c) => c.id === "import")?.perform).toBe(noop);
+    expect(commands.find((c) => c.id === "import-folder")?.perform).toBe(noop);
   });
 });

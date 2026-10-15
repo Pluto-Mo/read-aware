@@ -4654,6 +4654,27 @@ Actual installed fonts, visual font application, upgrade grants, preset restart
 and Agent composition remain concentrated desktop acceptance. New labels retain
 the existing Chinese/English fallback policy; document visual checks are deferred.
 
+### Page-turn input (Settings 1.11)
+
+[代码] `domains.settings` 1.11 adds four global, device-local reading paths to
+the same catalog used by product Agent tools and granted plugins:
+
+| Path | Values | Effect |
+| --- | --- | --- |
+| `reading.pageTurn.tapZones` | `off`, `sides`, `forward` | Content taps on the side zones turn pages; the center band still toggles the reader chrome. `sides` mirrors in right-to-left books |
+| `reading.pageTurn.tapZoneWidth` | `narrow`, `medium`, `wide` | Share of the reader's width each zone covers (20/30/40%) |
+| `reading.pageTurn.volumeKeys` | boolean | Android only: the volume keys turn pages while a book is open |
+| `reading.pageTurn.volumeKeyDirection` | `down-forward`, `up-forward` | Android only: which volume key reads on, for page turns and text-unit stepping alike |
+
+They share one preference record outside the per-book reader preferences: book
+and `all-books` targets reject, book overrides never list them, and a reading
+reset leaves them unchanged. Defaults keep the previous behavior (zones off,
+volume keys uncaptured). Volume-key capture is arbitrated between page turning
+and an active text-unit reading mode, and is released while a text field has
+focus. Catalog, Agent and granted-plugin writes and the tap resolver have
+directed tests; real Android key presses and touch taps remain desktop/device
+acceptance.
+
 ### Keyboard Shortcut Settings
 
 [代码] Settings 1.4 adds the `shortcuts` section: all 16 built-in editable

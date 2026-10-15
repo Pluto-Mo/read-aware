@@ -200,7 +200,8 @@
     "searchInvalidInput": "Utilisez une requête valide ou une URL web publique.",
     "searchProvider": "Le fournisseur de recherche a renvoyé une réponse inattendue.",
     "searchFetchFailed": "Cette page est illisible. Elle peut nécessiter une connexion ou bloquer l’accès automatisé.",
-    "searchTooLarge": "Cette page est trop volumineuse. Essayez une source plus petite."
+    "searchTooLarge": "Cette page est trop volumineuse. Essayez une source plus petite.",
+    "bookFolderTooLarge": "Ce dossier contient plus de 5 000 livres. Choisissez un dossier plus petit et importez en plusieurs fois."
   },
   "crashPrompt": {
     "title": "ReadAware a rencontré un problème la dernière fois",

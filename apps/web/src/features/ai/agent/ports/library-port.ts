@@ -23,6 +23,7 @@ function toOverview(book: BookSummary, state: BookStats | undefined): BookOvervi
     status: state?.status,
     narrativity: book.narrativity,
     spoilerSensitive: book.spoilerSensitive ?? undefined,
+    sourcePath: book.sourcePath,
     addedAt: book.addedAt,
     updatedAt: book.updatedAt,
     lastOpenedAt: book.lastOpenedAt,

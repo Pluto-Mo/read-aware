@@ -104,7 +104,32 @@
       "title": "页面颜色",
       "description": "书页的纸张颜色。“自动”跟随应用主题，其余为固定颜色。"
     },
-    "pageMargins": "页边距"
+    "pageMargins": "页边距",
+    "pageTurn": {
+      "title": "翻页",
+      "description": "点击和按键翻页的方式。保存在本设备，对所有书生效。",
+      "tapZones": {
+        "label": "点击翻页",
+        "off": "关闭",
+        "sides": "左侧上一页，右侧下一页",
+        "forward": "两侧都翻下一页"
+      },
+      "tapZoneWidth": {
+        "label": "点击区域宽度",
+        "narrow": "窄",
+        "medium": "中",
+        "wide": "宽"
+      },
+      "volumeKeys": {
+        "title": "音量键翻页",
+        "description": "打开书时，音量键用来翻页而不是调节音量；输入文字时仍照常调节音量。"
+      },
+      "volumeKeyDirection": {
+        "label": "音量键方向",
+        "downForward": "音量减往后读",
+        "upForward": "音量加往后读"
+      }
+    }
   },
   "shortcuts": {
     "title": "快捷键",
@@ -762,7 +787,8 @@
       "highlight": "高亮",
       "underline": "下划线",
       "addNote": "添加笔记",
-      "askAI": "问 AI"
+      "askAI": "问 AI",
+      "importFolder": "导入文件夹"
     }
   },
   "search": {

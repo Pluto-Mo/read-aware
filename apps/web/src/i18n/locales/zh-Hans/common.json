@@ -202,7 +202,8 @@
     "searchFetchFailed": "无法读取此网页，可能需要登录或不允许自动访问。",
     "searchTooLarge": "此网页过大，请尝试更小的资料来源。",
     "localApiBind": "本地 API 端口已被占用。请关闭占用此端口的服务，然后重新启动 API。",
-    "localApiUnavailable": "本地 API 尚未就绪。请保持 ReadAware 开启后重试。"
+    "localApiUnavailable": "本地 API 尚未就绪。请保持 ReadAware 开启后重试。",
+    "bookFolderTooLarge": "这个文件夹里的书超过 5000 本，请选择更小的文件夹分批导入。"
   },
   "crashPrompt": {
     "title": "ReadAware 上次运行出了问题",

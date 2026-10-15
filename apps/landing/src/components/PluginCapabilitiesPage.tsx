@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, BracketsCurly, SquaresFour } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { useCapabilityExplorer, useManifestDraft } from "../hooks/useCapabilityExplorer";
-import { localizePath, localeFromPathname } from "../lib/i18n";
+import { localizePath, localeFromPathname, servedHref } from "../lib/i18n";
 import { CapabilityBrowserSlot } from "./PluginDocTools";
 import "./capability-explorer.css";
 
@@ -23,7 +23,7 @@ export function PluginCapabilitiesPage() {
           <h1>{title}</h1>
           <p>{t("explorer.intro")}</p>
         </div>
-        <a className="explorer-guide" href={localizePath("/docs/plugins/develop", locale)}>
+        <a className="explorer-guide" href={servedHref(localizePath("/docs/plugins/develop", locale))}>
           {t("explorer.buildGuide")}
           <ArrowUpRight size={15} aria-hidden="true" />
         </a>
@@ -73,7 +73,7 @@ export function PluginCapabilitiesPage() {
       )}
       <footer className="explorer-footer">
         <span>{t("explorer.versionNote")}</span>
-        <a href={localizePath("/docs/plugins/api", locale)}>
+        <a href={servedHref(localizePath("/docs/plugins/api", locale))}>
           {t("explorer.apiGuide")}
           <ArrowUpRight size={14} aria-hidden="true" />
         </a>

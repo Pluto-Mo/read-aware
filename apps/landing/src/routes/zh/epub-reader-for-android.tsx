@@ -37,20 +37,20 @@ export const Route = createFileRoute("/zh/epub-reader-for-android")({
       <p>
         请从<a href={RELEASES_URL}>官方 GitHub Release</a>下载签名 APK。打开安装包时，Android
         可能要求允许当前浏览器或文件管理器安装未知来源应用。只为你确认来自官方的安装包启用该权限，安装后可关闭。详细步骤见
-        <Link to="/zh/docs/install">安装指南</Link>。
+        <Link to="/zh/docs/install/">安装指南</Link>。
       </p>
       <h2>手机与电脑，接着读同一段</h2>
       <p>
         可选同步使用端到端加密，传输书籍、批注、笔记和阅读进度。免费账户有 50 MB 同步额度，Sync 付费方案扩容；Pro 和 Max
         还包含内置 AI。请妥善保管加密口令，服务端无法代你恢复。桌面端支持
-        <Link to="/zh/epub-reader-for-windows">Windows</Link>、macOS 和 Linux。
+        <Link to="/zh/epub-reader-for-windows/">Windows</Link>、macOS 和 Linux。
       </p>
       <h2>本地阅读与远程 AI 分开选择</h2>
       <p>
         离线阅读不需要订阅。AI 功能需要联网，可自带 API Key，也可使用付费方案的内置
         AI；相关选文、问题和上下文会发送给模型服务商。自带 Key 不向 ReadAware 付 AI
         订阅费，但服务商可能收取调用费用。参见
-        <Link to="/zh/pricing">价格与额度</Link>及<Link to="/zh/privacy">隐私政策</Link>。
+        <Link to="/zh/pricing/">价格与额度</Link>及<Link to="/zh/privacy/">隐私政策</Link>。
       </p>
     </TopicPage>
   ),

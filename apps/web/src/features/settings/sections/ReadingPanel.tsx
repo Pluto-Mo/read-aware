@@ -1,14 +1,21 @@
 import { useAtom, useAtomValue } from "jotai";
-import { ChoiceGroup, Stack } from "@read-aware/ui";
+import { ChoiceGroup, Stack, Toggle } from "@read-aware/ui";
 import { useTranslation } from "../../../i18n";
 import { pluginThemesAtom } from "../../plugins/state/plugin-store";
-import { effectiveReaderSettingsAtom, readerPreferencesAtom } from "../../../state/ui";
+import { effectiveReaderSettingsAtom, pageTurnSettingsAtom, readerPreferencesAtom } from "../../../state/ui";
+import { isAndroid } from "../../../platform/environment";
 import { FontField } from "../components/FontField";
 import { SettingsGroup } from "../components/SettingsGroup";
 import { SettingsPage } from "../components/SettingsPage";
+import { SettingsRow } from "../components/SettingsRow";
 import { getReaderPreviewStyle } from "../lib/reader-css";
 import { resolveReaderFontWeight } from "../lib/reader-settings";
 import { applyReaderThemeSelection } from "../lib/reader-theme";
+import type {
+  PageTurnTapZoneWidth,
+  PageTurnTapZones,
+  VolumeKeyDirection,
+} from "../../../domain/settings/page-turn-settings";
 import { useReaderPalette } from "../hooks/useReaderPalette";
 import { useRegisteredPluginFont } from "../hooks/usePluginFonts";
 import { usePluginReaderThemeOptions } from "../hooks/usePluginReaderThemeOptions";
@@ -107,6 +114,8 @@ export function ReadingPanel() {
         </Stack>
       </SettingsGroup>
 
+      <PageTurnGroup />
+
       <SettingsGroup title={t("reading.pageColor.title")} description={t("reading.pageColor.description")}>
         <ChoiceGroup
           value={prefs.theme}
@@ -115,6 +124,70 @@ export function ReadingPanel() {
         />
       </SettingsGroup>
     </SettingsPage>
+  );
+}
+
+/** Tap zones and volume keys: device-local input habits, never per book. */
+function PageTurnGroup() {
+  const { t } = useTranslation("settings");
+  const [pageTurn, setPageTurn] = useAtom(pageTurnSettingsAtom);
+  const tapZoneOptions: { value: PageTurnTapZones; label: string }[] = [
+    { value: "off", label: t("reading.pageTurn.tapZones.off") },
+    { value: "sides", label: t("reading.pageTurn.tapZones.sides") },
+    { value: "forward", label: t("reading.pageTurn.tapZones.forward") },
+  ];
+  const tapZoneWidthOptions: { value: PageTurnTapZoneWidth; label: string }[] = [
+    { value: "narrow", label: t("reading.pageTurn.tapZoneWidth.narrow") },
+    { value: "medium", label: t("reading.pageTurn.tapZoneWidth.medium") },
+    { value: "wide", label: t("reading.pageTurn.tapZoneWidth.wide") },
+  ];
+  const volumeKeyDirectionOptions: { value: VolumeKeyDirection; label: string }[] = [
+    { value: "down-forward", label: t("reading.pageTurn.volumeKeyDirection.downForward") },
+    { value: "up-forward", label: t("reading.pageTurn.volumeKeyDirection.upForward") },
+  ];
+
+  return (
+    <SettingsGroup title={t("reading.pageTurn.title")} description={t("reading.pageTurn.description")}>
+      <Stack gap="lg">
+        <ChoiceGroup
+          label={t("reading.pageTurn.tapZones.label")}
+          value={pageTurn.tapZones}
+          options={tapZoneOptions}
+          onChange={(tapZones) => setPageTurn({ ...pageTurn, tapZones })}
+        />
+        <ChoiceGroup
+          label={t("reading.pageTurn.tapZoneWidth.label")}
+          value={pageTurn.tapZoneWidth}
+          options={tapZoneWidthOptions}
+          disabled={pageTurn.tapZones === "off"}
+          onChange={(tapZoneWidth) => setPageTurn({ ...pageTurn, tapZoneWidth })}
+        />
+        {/* Only Android can capture the volume buttons. */}
+        {isAndroid() && (
+          <>
+            <SettingsRow
+              borderless
+              className="py-0"
+              title={t("reading.pageTurn.volumeKeys.title")}
+              description={t("reading.pageTurn.volumeKeys.description")}
+              control={
+                <Toggle
+                  aria-label={t("reading.pageTurn.volumeKeys.title")}
+                  checked={pageTurn.volumeKeys}
+                  onChange={(volumeKeys) => setPageTurn({ ...pageTurn, volumeKeys })}
+                />
+              }
+            />
+            <ChoiceGroup
+              label={t("reading.pageTurn.volumeKeyDirection.label")}
+              value={pageTurn.volumeKeyDirection}
+              options={volumeKeyDirectionOptions}
+              onChange={(volumeKeyDirection) => setPageTurn({ ...pageTurn, volumeKeyDirection })}
+            />
+          </>
+        )}
+      </Stack>
+    </SettingsGroup>
   );
 }
 

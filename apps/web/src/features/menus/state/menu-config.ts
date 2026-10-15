@@ -47,7 +47,8 @@ export const CORE_MENU_DEFAULTS: Record<MenuSurface, string[]> = {
  */
 export const CORE_OVERFLOW_DEFAULTS: Record<MenuSurface, string[]> = {
   primaryNav: ["core:stats"],
-  shelfHeader: [],
+  // Folder imports are occasional: a menu entry, not another header icon.
+  shelfHeader: ["core:importFolder"],
   readerHeader: [],
   readerToolbar: [],
   selection: [],
@@ -165,21 +166,25 @@ export function resetSurfaceLayout(surface: MenuSurface): void {
  * - stored ids not in `known` are dropped from the result (config untouched);
  * - known ids missing from the config are appended — built-ins to `visible`
  *   (they were always visible before customization existed), plugin items to
- *   `overflow` (new capability arrives quietly).
+ *   `overflow` (new capability arrives quietly). A built-in that starts out
+ *   of sight (`defaultOverflowIds`, the surface's CORE_OVERFLOW_DEFAULTS)
+ *   joins a saved layout in `overflow` too, as it does the default one.
  */
 export function resolveSurfaceLayout(
   layout: SurfaceLayout,
   knownIds: string[],
-  options?: { defaultVisibleIds?: readonly string[] },
+  options?: { defaultVisibleIds?: readonly string[]; defaultOverflowIds?: readonly string[] },
 ): SurfaceLayout {
   const known = new Set(knownIds);
   const defaultVisible = new Set(options?.defaultVisibleIds ?? []);
+  const defaultOverflow = new Set(options?.defaultOverflowIds ?? []);
   const placed = new Set([...layout.visible, ...layout.overflow]);
   const visible = layout.visible.filter((id) => known.has(id));
   const overflow = layout.overflow.filter((id) => known.has(id));
   for (const id of knownIds) {
     if (placed.has(id)) continue;
-    if (id.startsWith("core:") || defaultVisible.has(id)) visible.push(id);
+    if (defaultOverflow.has(id)) overflow.push(id);
+    else if (id.startsWith("core:") || defaultVisible.has(id)) visible.push(id);
     else overflow.push(id);
   }
   return { visible, overflow };

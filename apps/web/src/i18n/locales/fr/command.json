@@ -45,6 +45,10 @@
     "goAgent": {
       "title": "Demander à ReadAware",
       "keywords": "agent ia discussion demander contexte notes"
+    },
+    "importFolder": {
+      "title": "Importer un dossier",
+      "keywords": "ajouter dossier répertoire bibliothèque lot import folder"
     }
   },
   "layout": {

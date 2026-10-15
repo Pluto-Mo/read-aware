@@ -104,7 +104,32 @@
       "title": "Color de página",
       "description": "El papel del libro. «Automático» sigue el tema de la app; los demás son fijos."
     },
-    "pageMargins": "Márgenes de página"
+    "pageMargins": "Márgenes de página",
+    "pageTurn": {
+      "title": "Pasar página",
+      "description": "Cómo pasan las páginas los toques y los botones. Se guarda en este dispositivo y se aplica a todos los libros.",
+      "tapZones": {
+        "label": "Tocar para pasar",
+        "off": "Desactivado",
+        "sides": "Izquierda atrás, derecha adelante",
+        "forward": "Ambos lados adelante"
+      },
+      "tapZoneWidth": {
+        "label": "Ancho de las zonas",
+        "narrow": "Estrecho",
+        "medium": "Medio",
+        "wide": "Ancho"
+      },
+      "volumeKeys": {
+        "title": "Pasar páginas con las teclas de volumen",
+        "description": "Con un libro abierto, las teclas de volumen pasan páginas en lugar de cambiar el volumen. Mientras escribes, cambian el volumen como siempre."
+      },
+      "volumeKeyDirection": {
+        "label": "Dirección de las teclas de volumen",
+        "downForward": "Bajar volumen avanza",
+        "upForward": "Subir volumen avanza"
+      }
+    }
   },
   "shortcuts": {
     "title": "Atajos",
@@ -671,7 +696,8 @@
       "highlight": "Subrayar",
       "underline": "Subrayado",
       "addNote": "Añadir nota",
-      "askAI": "Preguntar a la IA"
+      "askAI": "Preguntar a la IA",
+      "importFolder": "Importar carpeta"
     }
   },
   "search": {

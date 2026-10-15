@@ -104,7 +104,32 @@
       "title": "Page Color",
       "description": "The book's paper. Auto follows the app theme; the others are fixed."
     },
-    "pageMargins": "Page margins"
+    "pageMargins": "Page margins",
+    "pageTurn": {
+      "title": "Page Turning",
+      "description": "How taps and buttons turn pages. Saved on this device and used for every book.",
+      "tapZones": {
+        "label": "Tap to Turn",
+        "off": "Off",
+        "sides": "Left back, right forward",
+        "forward": "Both sides forward"
+      },
+      "tapZoneWidth": {
+        "label": "Tap Zone Width",
+        "narrow": "Narrow",
+        "medium": "Medium",
+        "wide": "Wide"
+      },
+      "volumeKeys": {
+        "title": "Turn pages with volume keys",
+        "description": "While a book is open, the volume keys turn pages instead of changing the volume. They change the volume as usual while you type."
+      },
+      "volumeKeyDirection": {
+        "label": "Volume Key Direction",
+        "downForward": "Volume down reads on",
+        "upForward": "Volume up reads on"
+      }
+    }
   },
   "shortcuts": {
     "title": "Shortcuts",
@@ -762,7 +787,8 @@
       "highlight": "Highlight",
       "underline": "Underline",
       "addNote": "Add note",
-      "askAI": "Ask AI"
+      "askAI": "Ask AI",
+      "importFolder": "Import folder"
     }
   },
   "search": {

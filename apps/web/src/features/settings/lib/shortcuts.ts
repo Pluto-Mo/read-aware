@@ -1,4 +1,5 @@
 import { isMacOS } from "../../../platform/environment";
+import type { VolumeKeyDirection } from "../../../domain/settings/page-turn-settings";
 
 /**
  * A normalized keyboard chord. `mod` abstracts the platform command key — ⌘ on
@@ -180,6 +181,8 @@ export const INFO_SHORTCUTS: InfoShortcut[] = [
     category: "Global",
     keys: [isMacOS() ? "⌘" : "Ctrl", "1–4"],
   },
+  // Forward key first; infoShortcutKeys flips the pair when the reader has
+  // set volume up to read on.
   {
     id: "reader-mode-volume-keys",
     category: "TextUnitMode",
@@ -188,6 +191,13 @@ export const INFO_SHORTCUTS: InfoShortcut[] = [
   },
   { id: "close", category: "Overlays", keys: ["Esc"] },
 ];
+
+/** The keys an info row shows, under the reader's volume-key direction. */
+export function infoShortcutKeys(shortcut: InfoShortcut, volumeKeyDirection: VolumeKeyDirection): string[] {
+  return shortcut.id === "reader-mode-volume-keys" && volumeKeyDirection === "up-forward"
+    ? [...shortcut.keys].reverse()
+    : shortcut.keys;
+}
 
 const DEFAULT_BINDINGS = new Map<BuiltinShortcutId, KeyChord>(
   EDITABLE_SHORTCUTS.map((shortcut) => [shortcut.id, shortcut.defaultBinding]),

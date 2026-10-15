@@ -60,6 +60,11 @@ export interface BookOverview {
   narrativity?: "narrative" | "expository";
   /** Protect fictional plot revelations; factual history/biography is false. */
   spoilerSensitive?: boolean;
+  /**
+   * Where a folder import found the file: the picked folder's name and the
+   * path below it (`Books/Sci-fi/Dune.epub`). Absent for books imported one by one.
+   */
+  sourcePath?: string;
   addedAt?: string;
   updatedAt?: string;
   lastOpenedAt?: string;

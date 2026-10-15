@@ -13,6 +13,7 @@ import type {
 import { CORE_MENU_ITEMS } from "./menu-registry";
 import {
   clampPrimaryNavVisible,
+  CORE_OVERFLOW_DEFAULTS,
   pluginMenuId,
   resolveSurfaceLayout,
   type MenuConfig,
@@ -94,6 +95,7 @@ export function resolvedSurfaceLayout(
 ): SurfaceLayout {
   const known = knownSurfaceItems(surface, plugins).map((item) => item.id);
   const layout = resolveSurfaceLayout(config[surface], known, {
+    defaultOverflowIds: CORE_OVERFLOW_DEFAULTS[surface],
     defaultVisibleIds:
       surface === "selection"
         ? plugins.selectionActions

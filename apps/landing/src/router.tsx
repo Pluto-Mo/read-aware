@@ -12,6 +12,10 @@ export function createAppRouter(options: LandingRouterContext & { history?: Rout
     context: { i18n: options.i18n },
     defaultPreload: "intent",
     scrollRestoration: true,
+    // Pages are served as `<path>/index.html` and the bare path answers with a
+    // 308 (wrangler `auto-trailing-slash`). Emit the served form so no internal
+    // link, preload or crawler hop goes through that redirect.
+    trailingSlash: "always",
     history: options.history,
   });
 }

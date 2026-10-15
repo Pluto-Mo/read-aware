@@ -5,7 +5,7 @@
 - 状态：**源码能力盘点；接线与真实验收分别记录**。
 - 文档整理日期：2026-09-15（不代表本日重新验收每行）。
 - 范围：当前 Tauri 桌面宿主及必要组合协议；Agent 指 ReadAware 产品内的模型工具与自动管线，不是外部 Coding Agent 的电脑控制能力。
-- [代码] 249 行 / 13 组，129 个既有验收项全部有对应行。字段行是可核对设置清单，不能与功能族相加当产品功能数量。
+- [代码] 253 行 / 13 组，129 个既有验收项全部有对应行。字段行是可核对设置清单，不能与功能族相加当产品功能数量。
 - [设计] 两个目标列是建议开放方式/刻意拒绝方式，尚未实现的目标不混入当前状态。
 - 修改事实源 [host-capability-matrix.data.ts](./host-capability-matrix.data.ts)，再运行 [生成器](../../scripts/build-host-capability-matrix.ts)；不要分别手改生成的 MD/HTML。
 
@@ -17,9 +17,9 @@
 
 ## 计数与口径
 
-- 宿主：实装 217、部分 29、占位 1、非桌面 1、待建 1。
-- Agent：接通 157、接通（待 E2E） 24、扩展 10、部分 30、自动 13、未接 15。
-- 插件：接通 173、接通（待 E2E） 29、部分 41、未接 6。
+- 宿主：实装 221、部分 29、占位 1、非桌面 1、待建 1。
+- Agent：接通 161、接通（待 E2E） 24、扩展 10、部分 30、自动 13、未接 15。
+- 插件：接通 177、接通（待 E2E） 29、部分 41、未接 6。
 
 不提供一个虚假的“整体覆盖率”：这里既有功能族也有逐字段行，且自动管线、插件条件扩展、禁止开放、宿主未建不应混为一个分母。上面的数量是本表状态分布，不是通过率。当前可调用具体入口的库存另列，入口数也不代表语义完整。
 
@@ -152,7 +152,7 @@
 | <a id="CFG12"></a>CFG12 | 新标注默认颜色 | 实装 | **接通**：annotations.defaultColor<br>[设计] 结构化设置工具 | **接通**：settings 1.2；annotations section<br>[设计] 路径授权设置领域 | 一键高亮/下划线；recolor 更新后续默认色 | yellow/green/blue/pink，默认 yellow；宿主动作即时读取当前偏好，不再捕获挂载时颜色；不重染已有标注 | [MARKPREFS](../../apps/web/src/features/annotations/lib/annotation-prefs.ts) [TEXTACTIONS](../../apps/web/src/features/reader/hooks/useReaderTextActions.ts) [SETTINGS](../../apps/web/src/domain/settings/catalog.ts) | 新增盘点 |
 | <a id="CFG13"></a>CFG13 | 软件更新通道 stable/beta | 实装 | **接通**：general.updateChannel<br>[设计] 设备本地设置工具 | **接通**：settings 1.2；全局枚举字段<br>[设计] 路径授权设置领域 | AboutPanel；软件更新查询 | 设备本地且不漫游；已打开 About 控件跟随 KV 更新/回滚；修改通道只影响后续检查，不批准下载、安装或重启 | [UPDATECHANNEL](../../apps/web/src/features/update/lib/update-channel.ts) [ABOUT](../../apps/web/src/features/settings/sections/AboutPanel.tsx) [UPDATE](../../apps/web/src/features/update/lib/software-update.ts) [SETTINGS](../../apps/web/src/domain/settings/catalog.ts) | 新增盘点 |
 
-### 设置字段逐项覆盖（79 个活动路径；SET26 为历史占位）
+### 设置字段逐项覆盖（83 个活动路径；SET26 为历史占位）
 
 | ID | 宿主能力 | 宿主现状 | Agent 当前与目标 | 插件当前与目标 | 实际消费者 | 缺口/边界 | 来源 | 旧基线 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -236,6 +236,10 @@
 | <a id="SET78"></a>SET78 | shortcuts.zoom-out | 实装 | **接通**：get_settings/update_settings<br>[设计] 类型化设置工具 | **接通**：settings discover/read/update（需路径授权）<br>[设计] 类型化设置领域 | 设置页；Agent；授权插件可调用（不代表每个插件实际调用） | 目录有读写且存在产品消费者；仍受格式、配置、scope、授权与持久化契约约束。 | [SETTINGS](../../apps/web/src/domain/settings/catalog.ts) [SETDOMAIN](../../apps/web/src/domain/settings/domain.ts) [SETTOOLS](../../packages/agent/src/tools/settings-tools.ts) [UI](../../apps/web/src/state/ui.ts) | 新增盘点 |
 | <a id="SET79"></a>SET79 | shortcuts.zoom-reset | 实装 | **接通**：get_settings/update_settings<br>[设计] 类型化设置工具 | **接通**：settings discover/read/update（需路径授权）<br>[设计] 类型化设置领域 | 设置页；Agent；授权插件可调用（不代表每个插件实际调用） | 目录有读写且存在产品消费者；仍受格式、配置、scope、授权与持久化契约约束。 | [SETTINGS](../../apps/web/src/domain/settings/catalog.ts) [SETDOMAIN](../../apps/web/src/domain/settings/domain.ts) [SETTOOLS](../../packages/agent/src/tools/settings-tools.ts) [UI](../../apps/web/src/state/ui.ts) | 新增盘点 |
 | <a id="SET80"></a>SET80 | shortcuts.zoom-lock | 实装 | **接通**：get_settings/update_settings<br>[设计] 类型化设置工具 | **接通**：settings discover/read/update（需路径授权）<br>[设计] 类型化设置领域 | 设置页；Agent；授权插件可调用（不代表每个插件实际调用） | 目录有读写且存在产品消费者；仍受格式、配置、scope、授权与持久化契约约束。 | [SETTINGS](../../apps/web/src/domain/settings/catalog.ts) [SETDOMAIN](../../apps/web/src/domain/settings/domain.ts) [SETTOOLS](../../packages/agent/src/tools/settings-tools.ts) [UI](../../apps/web/src/state/ui.ts) | 新增盘点 |
+| <a id="SET81"></a>SET81 | reading.pageTurn.tapZones | 实装 | **接通**：get_settings/update_settings<br>[设计] 类型化设置工具 | **接通**：settings discover/read/update（需路径授权）<br>[设计] 类型化设置领域 | 设置页；Agent；授权插件可调用（不代表每个插件实际调用） | settings 1.11：设备本地、仅 global 的翻页输入偏好，不进入书级覆盖/阅读重置。阅读器点击区按阅读根宽度分侧（RTL 镜像、FXL 先平移、书末进完成页），音量键经 claimVolumeKeys 仲裁（文本单元模式占用时让位，输入框聚焦归还）；音量键两项仅 Android 生效。目录/Agent/插件与解析器定向测试通过，真实 Android 按键与触屏点击待集中验收。 | [SETTINGS](../../apps/web/src/domain/settings/catalog.ts) [SETDOMAIN](../../apps/web/src/domain/settings/domain.ts) [SETTOOLS](../../packages/agent/src/tools/settings-tools.ts) [PAGETURNPREFS](../../apps/web/src/domain/settings/page-turn-settings.ts) [PAGETURNTAP](../../apps/web/src/features/reader/lib/page-turn-tap.ts) [VOLUMEKEYS](../../apps/web/src/platform/volume-keys.ts) [VOLUMEKEYSTEPS](../../apps/web/src/features/reader/hooks/useVolumeKeySteps.ts) | 新增盘点 |
+| <a id="SET82"></a>SET82 | reading.pageTurn.tapZoneWidth | 实装 | **接通**：get_settings/update_settings<br>[设计] 类型化设置工具 | **接通**：settings discover/read/update（需路径授权）<br>[设计] 类型化设置领域 | 设置页；Agent；授权插件可调用（不代表每个插件实际调用） | settings 1.11：设备本地、仅 global 的翻页输入偏好，不进入书级覆盖/阅读重置。阅读器点击区按阅读根宽度分侧（RTL 镜像、FXL 先平移、书末进完成页），音量键经 claimVolumeKeys 仲裁（文本单元模式占用时让位，输入框聚焦归还）；音量键两项仅 Android 生效。目录/Agent/插件与解析器定向测试通过，真实 Android 按键与触屏点击待集中验收。 | [SETTINGS](../../apps/web/src/domain/settings/catalog.ts) [SETDOMAIN](../../apps/web/src/domain/settings/domain.ts) [SETTOOLS](../../packages/agent/src/tools/settings-tools.ts) [PAGETURNPREFS](../../apps/web/src/domain/settings/page-turn-settings.ts) [PAGETURNTAP](../../apps/web/src/features/reader/lib/page-turn-tap.ts) [VOLUMEKEYS](../../apps/web/src/platform/volume-keys.ts) [VOLUMEKEYSTEPS](../../apps/web/src/features/reader/hooks/useVolumeKeySteps.ts) | 新增盘点 |
+| <a id="SET83"></a>SET83 | reading.pageTurn.volumeKeys | 实装 | **接通**：get_settings/update_settings<br>[设计] 类型化设置工具 | **接通**：settings discover/read/update（需路径授权）<br>[设计] 类型化设置领域 | 设置页；Agent；授权插件可调用（不代表每个插件实际调用） | settings 1.11：设备本地、仅 global 的翻页输入偏好，不进入书级覆盖/阅读重置。阅读器点击区按阅读根宽度分侧（RTL 镜像、FXL 先平移、书末进完成页），音量键经 claimVolumeKeys 仲裁（文本单元模式占用时让位，输入框聚焦归还）；音量键两项仅 Android 生效。目录/Agent/插件与解析器定向测试通过，真实 Android 按键与触屏点击待集中验收。 | [SETTINGS](../../apps/web/src/domain/settings/catalog.ts) [SETDOMAIN](../../apps/web/src/domain/settings/domain.ts) [SETTOOLS](../../packages/agent/src/tools/settings-tools.ts) [PAGETURNPREFS](../../apps/web/src/domain/settings/page-turn-settings.ts) [PAGETURNTAP](../../apps/web/src/features/reader/lib/page-turn-tap.ts) [VOLUMEKEYS](../../apps/web/src/platform/volume-keys.ts) [VOLUMEKEYSTEPS](../../apps/web/src/features/reader/hooks/useVolumeKeySteps.ts) | 新增盘点 |
+| <a id="SET84"></a>SET84 | reading.pageTurn.volumeKeyDirection | 实装 | **接通**：get_settings/update_settings<br>[设计] 类型化设置工具 | **接通**：settings discover/read/update（需路径授权）<br>[设计] 类型化设置领域 | 设置页；Agent；授权插件可调用（不代表每个插件实际调用） | settings 1.11：设备本地、仅 global 的翻页输入偏好，不进入书级覆盖/阅读重置。阅读器点击区按阅读根宽度分侧（RTL 镜像、FXL 先平移、书末进完成页），音量键经 claimVolumeKeys 仲裁（文本单元模式占用时让位，输入框聚焦归还）；音量键两项仅 Android 生效。目录/Agent/插件与解析器定向测试通过，真实 Android 按键与触屏点击待集中验收。 | [SETTINGS](../../apps/web/src/domain/settings/catalog.ts) [SETDOMAIN](../../apps/web/src/domain/settings/domain.ts) [SETTOOLS](../../packages/agent/src/tools/settings-tools.ts) [PAGETURNPREFS](../../apps/web/src/domain/settings/page-turn-settings.ts) [PAGETURNTAP](../../apps/web/src/features/reader/lib/page-turn-tap.ts) [VOLUMEKEYS](../../apps/web/src/platform/volume-keys.ts) [VOLUMEKEYSTEPS](../../apps/web/src/features/reader/hooks/useVolumeKeySteps.ts) | 新增盘点 |
 
 ### 对话、Agent 交互与推理
 
@@ -310,7 +314,7 @@
 | <a id="SYS15"></a>SYS15 | 原生日志/诊断包/崩溃报告导出与发送 | 实装 | **接通**：request_diagnostics_report / verify_local_data[双域]<br>[设计] 宿主预览确认与最终回执 | **接通**：diagnostics1.1 requestReport/verifyProjections；logging1.0 write/policy<br>[设计] 诊断流程、汇总计数及自有日志 | 设置About Diagnostics；CrashFollowUpPrompt；正式双端服务 | requestReport(export/send)与双域Agent共用宿主完整预览，导出和发送都须用户确认；不返回包/日志/路径/报告ID，不允许指定内容或收件人。exported等保存成功，sent等固定报告接口HTTP成功及ok:true/非空有界ID，取消预览或文件选择器返回cancelled；失败拒绝不假报成功，sent非开发者处理。日志/投影样本可能含个人书籍/笔记/对话，八语言告知已纠正，不承诺自动脱敏；确认后发送同一包。与sync共用宿主流程控制器；一次一个流程，未确认取消丢弃迟到采集，已确认源结束才释放、不回滚，无耐久TaskRef/重启恢复。原投影计数/共享校验与自有日志限流语义不变，logging accepted仍非落盘保证。基础授权/回执/挂载与同步回归通过；真实Worker/Tauri（夹具插件已退役）已验export/send两种宿主预览及取消回执，未导出诊断包或发送，真实落盘/上传和完整Agent组合仍待验。 | [DIAG](../../apps/web/src/features/settings/lib/diagnostics.ts) [ERRORS](../../packages/core/src/errors.ts) [RUST](../../apps/desktop/src-tauri/src/lib.rs) [HOSTMAINTENANCE](../../apps/web/src/services/maintenance.ts) [MAINTENANCETOOLS](../../packages/agent/src/tools/maintenance-tools.ts) [PLUGINLOGGING](../../apps/web/src/features/plugins/runtime/plugin-logging.ts) [DIAGNOSTICS](../../apps/web/src/services/diagnostics.ts) [DIAGNOSTICSPROOF](../../apps/web/src/services/diagnostics-controller.test.ts) [DIAGNOSTICSGRANT](../../apps/web/src/features/plugins/runtime/plugin-diagnostics.test.ts) [DIAGNOSTICFLOW](../../apps/web/src/features/settings/hooks/useDiagnosticsReport.ts) [HOSTACTIONFLOW](../../apps/web/src/services/host-action-flow.ts) | R05, R06 |
 | <a id="SYS16"></a>SYS16 | 检查/下载/安装更新与重启 | 实装 | **接通**：get_software_update/open_maintenance_settings[双域]<br>[设计] 查询状态/打开宿主更新控件 | **接通**：services.maintenance 1.0<br>[设计] 版本/更新状态与观察、受权检查；宿主执行升级 | 软件更新页；autoUpdate 与正式双端服务共用控制器；无插件消费者 | snapshot/observe 只读当前 phase/progress/version/选中与已检查频道；checkForUpdates 需插件 network 权限，只用宿主 release feed，失败拒绝不冒充最新。检查复用单飞、与安装互斥，频道换代拒绝旧结果；调用者取消不撤销共享检查。openSettings 仅确认宿主更新控件已挂载和定位，安装/重启仍由原生用户动作批准，禁止插件静默执行；不提供升级最终结果回执。实时状态、显式检查及原生交接可组合；保留原始0-100或null进度，不支持平台与最新状态分开，检查直接展示回执。20项插件测试及构建/类型通过；真实Worker/Tauri检查下载重启集中后置。maintenance1.5保留共享检查、通道变化与宿主安装的观察来源，公开反应/稳定规则已接；类型/构建和定向检查通过，真实原生边界仍待验。 | [UPDATE](../../apps/web/src/features/update/lib/software-update.ts) [APP](../../apps/web/src/App.tsx) [RUST](../../apps/desktop/src-tauri/src/lib.rs) [API](../../packages/plugin-types/src/index.ts) [HOSTMAINTENANCE](../../apps/web/src/services/maintenance.ts) [MAINTENANCETOOLS](../../packages/agent/src/tools/maintenance-tools.ts) [UPDATECONTROL](../../apps/web/src/features/update/lib/software-update-controller.ts) | R05 |
 | <a id="SYS17"></a>SYS17 | 窗口最小化/最大化/全屏/关闭/标题栏 | 实装 | **接通（待 E2E）**：get_app_window / control_app_window / get_operation_availability(window.control)[双域]；close/quit 不开放（有意）<br>[设计] 用户触发的窗口意图 | **接通（待 E2E）**：UI 1.11 window.snapshot/observe/control；session2.6 window.control条件；close 不开放（有意）<br>[设计] 受限窗口状态/命令 | 同源自绘标题栏与边缘状态；OS traffic lights；Agent；无第一方插件消费者（Workspace Profiles 0.11 于 2026-09-16 移除窗口页） | UI1.17已将窗口观察接入反应凭证和稳定ruleId，慢回调与错误恢复保留来源、原生轮询不另起根；原 Workspace Profiles 0.10 曾通过withEvent刷新窗口页并跳过cycle（窗口页已于 2026-09-16 移除，仅作历史证据）。受影响类型与窗口控制器检查通过，真实Worker/Tauri反馈链待验。session2.6已补window.control只读条件：平台支持、32项队列和当前目标状态复用执行入口检查；无窗口派发/几何/原生输入信息，读取失败保留unknown。Agent嵌套request及插件生命周期接口已接；原 Workspace Profiles 0.9 曾在点击前查询、明确不可用显示错误、已满足目标则提示而不重复派发（历史证据）。受影响类型和窗口关键检查通过；真实Tauri窗口状态/动画和公共Worker仍待集中验收。已接主窗口最小化/最大化/还原/全屏与 minimized/maximized/fullscreen/focused；仅元数据，无标题/坐标/路径或任意窗口。32 个排队操作，64 个观察者共享事件/一秒复核；退休取消未派发操作并释放监听，不回滚已发生动作。requested 仅原生回执，不是动画或持久完成。历史证据：Workspace Profiles 0.5 曾组合独立实时窗口页和全部现有命令，不将窗口状态写入预设；2026-09-16 Workspace Profiles 0.11 重写后移除窗口页，插件侧证据只保留在 Git 历史中，当前插件侧窗口控制无第一方消费者。定向服务/插件/Agent 测试通过，真实 Worker/窗口管理器留集中验收。关闭/退出的统一保存协调已接：主窗口 onCloseRequested 先 preventDefault，经 ShutdownCoordinator 按 settle（阅读会话 retire、插件 quiesce 排空 Worker 写）→ persist（普通KV与凭据队列）→ receipts（它们产生的事件）三阶段冲刷后再 destroy；事件从受理开始覆盖身份准备、真实IPC及提交后广播，含阅读关闭与恢复凭据发布，等待取消不移除物理工作；凭据失败保留原错误并标记degraded，其他队列和事件仍排空。隔离生产宿主路径已验证慢原生保存/身份查询/事件提交与观察者追加写，不是全局写入准入屏障；Cmd+Q/系统退出由 Rust 一次 prevent_exit 并发 app-exit-requested，webview 冲刷后 app_exit_confirm 真正退出，10 秒兜底强制退出；冲刷失败/超时只记录 degraded 回执不困住用户，冲刷期间重复关闭被吸收，原生 close 失败重新开放协调。close/quit 对 Agent 与插件仍是有意边界（不开放），窗口 control 不含 close。定向单元测试通过；真实 Tauri 关闭/退出、窗口管理器与跨平台属第三段。窗口命令在派发前读基线，原生请求后的实际状态/客户区尺寸变化保留Agent、插件事件或原生用户来源；无变化不重标，取消或中途失败仍保留已观察效果。布局读按已准入窗口命令隔离合并，不能复用命令前的在途样本；尺寸不进入公开窗口数据。图片ResizeObserver只接受匹配窗口尺寸的来源，重复尺寸不通知，父组件重绘不冒用旧pan/zoom来源；新变换、新尺寸或卸载退休旧异步反馈。受控原生/实际React与公开插件路径通过；未关联的动画后续帧、同viewport其他容器变化和OS读取失败仍无完整来源，C04不关闭，真实Tauri布局后置。 | [RESIZESOURCE](../../apps/web/src/features/reader/lib/resize-source.ts) [WINDOWSERVICE](../../apps/web/src/services/window-controller.ts) [WINDOWPROOF](../../apps/web/src/services/window-controller.test.ts) [WINDOW](../../apps/web/src/features/navigation/components/WindowCaptionControls.tsx) [APP](../../apps/web/src/App.tsx) [RUST](../../apps/desktop/src-tauri/src/lib.rs) [WINDOWTOOLS](../../packages/agent/src/tools/window-tools.ts) [SHUTDOWN](../../apps/web/src/services/shutdown.ts) [SHUTDOWNPROOF](../../apps/web/src/services/shutdown.test.ts) [SHUTDOWNOWNERS](../../apps/web/src/platform/shutdown-owners.ts) [PERSISTENCESHUTDOWN](../../apps/web/src/platform/persistence-shutdown.ts) [PERSISTENCESHUTDOWNPROOF](../../apps/web/src/platform/persistence-shutdown.test.ts) [WINDOWCLOSE](../../apps/web/src/platform/window-close.ts) [WINDOWCLOSEPROOF](../../apps/web/src/platform/window-close.test.ts) [WRITESETTLEMENT](../../apps/web/src/platform/write-settlement.ts) [EXITCOORDINATION](../../apps/desktop/src-tauri/src/exit_coordination.rs) | 新增盘点 |
-| <a id="SYS18"></a>SYS18 | Android/iOS 遗留桥：状态栏/安全区/音量键/商店 | 非桌面 | **未接**：无正式入口<br>[设计] 不开放：不在当前 desktop 产品范围 | **未接**：无正式入口<br>[设计] 不开放：不在当前 desktop 产品范围 | cfg 分支或桌面 no-op | Android updater/book picker/background task 和 App Store storefront 不计为桌面插件缺口 | [RUST](../../apps/desktop/src-tauri/src/lib.rs) | 新增盘点 |
+| <a id="SYS18"></a>SYS18 | Android/iOS 遗留桥：状态栏/安全区/音量键/商店 | 非桌面 | **未接**：无正式入口<br>[设计] 不开放：不在当前 desktop 产品范围 | **未接**：无正式入口<br>[设计] 不开放：不在当前 desktop 产品范围 | cfg 分支或桌面 no-op | Android updater/book picker/background task、移动端文件夹导入选择器（SAF 目录树 / iOS 文件夹 UIDocumentPicker）和 App Store storefront 不计为桌面插件缺口 | [RUST](../../apps/desktop/src-tauri/src/lib.rs) | 新增盘点 |
 
 ### 同步、账号、备份与维护
 
@@ -1021,6 +1025,10 @@
 | `reading.pageMargins` | [SET15](#SET15) | [代码] 目录可读写；实际效果见主表 |
 | `reading.readingMode` | [SET16](#SET16) | [代码] 目录可读写；实际效果见主表 |
 | `reading.fixedLayoutReadingMode` | [SET17](#SET17) | [代码] 目录可读写；实际效果见主表 |
+| `reading.pageTurn.tapZones` | [SET81](#SET81) | [代码] 目录可读写；实际效果见主表 |
+| `reading.pageTurn.tapZoneWidth` | [SET82](#SET82) | [代码] 目录可读写；实际效果见主表 |
+| `reading.pageTurn.volumeKeys` | [SET83](#SET83) | [代码] 目录可读写；实际效果见主表 |
+| `reading.pageTurn.volumeKeyDirection` | [SET84](#SET84) | [代码] 目录可读写；实际效果见主表 |
 | `ai.preferences.features.explainSelection` | [SET18](#SET18) | [代码] 目录可读写；实际效果见主表 |
 | `ai.preferences.features.defineTerm` | [SET19](#SET19) | [代码] 目录可读写；实际效果见主表 |
 | `ai.preferences.features.translate` | [SET20](#SET20) | [代码] 目录可读写；实际效果见主表 |
@@ -1287,6 +1295,10 @@
 | `move_task_to_back` | [SYS18](#SYS18) | [代码] 内部 IPC 能力证据；不是插件或模型授权入口 |
 | `book_pick_start` | [SYS18](#SYS18) | [代码] 内部 IPC 能力证据；不是插件或模型授权入口 |
 | `book_pick_poll` | [SYS18](#SYS18) | [代码] 内部 IPC 能力证据；不是插件或模型授权入口 |
+| `book_folders::book_folder_pick` | [LIB06](#LIB06) [SYS11](#SYS11) | [代码] 内部 IPC 能力证据；不是插件或模型授权入口 |
+| `book_folders::book_folder_pick_start` | [SYS18](#SYS18) | [代码] 内部 IPC 能力证据；不是插件或模型授权入口 |
+| `book_folders::book_folder_pick_poll` | [SYS18](#SYS18) | [代码] 内部 IPC 能力证据；不是插件或模型授权入口 |
+| `book_folders::book_folder_release` | [SYS18](#SYS18) | [代码] 内部 IPC 能力证据；不是插件或模型授权入口 |
 | `set_traffic_lights_visible` | [SYS17](#SYS17) | [代码] 内部 IPC 能力证据；不是插件或模型授权入口 |
 | `window_input::window_input_revision` | [SYS17](#SYS17) | [代码] 内部 IPC 能力证据；不是插件或模型授权入口 |
 | `list_system_fonts` | [SYS14](#SYS14) | [代码] 内部 IPC 能力证据；不是插件或模型授权入口 |
@@ -1331,6 +1343,7 @@
 | `core:stats` | [UI01](#UI01) | [代码] 注册库存已映射，不表示产品 E2E 通过 |
 | `core:search` | [UI03](#UI03) | [代码] 注册库存已映射，不表示产品 E2E 通过 |
 | `core:import` | [LIB06](#LIB06) | [代码] 注册库存已映射，不表示产品 E2E 通过 |
+| `core:importFolder` | [LIB06](#LIB06) | [代码] 注册库存已映射，不表示产品 E2E 通过 |
 | `core:viewControl` | [UI02](#UI02) | [代码] 注册库存已映射，不表示产品 E2E 通过 |
 | `core:stats` | [UI01](#UI01) | [代码] 注册库存已映射，不表示产品 E2E 通过 |
 | `core:settings` | [UI01](#UI01) | [代码] 注册库存已映射，不表示产品 E2E 通过 |
@@ -1396,6 +1409,7 @@
 | 当前注册项 | 矩阵行 | 说明 |
 | --- | --- | --- |
 | `importBook` | [LIB06](#LIB06) | [代码] 注册库存已映射，不表示产品 E2E 通过 |
+| `importFolder` | [LIB06](#LIB06) | [代码] 注册库存已映射，不表示产品 E2E 通过 |
 
 ### Host semantic command
 

@@ -189,6 +189,7 @@ export async function importBook(source: BookImportSource, options: ImportBookOp
             fileSize: staged.byteSize,
             sourceBlobKey: bookFileKey(bookId),
             sourceSha256: staged.sha256,
+            ...(source.kind !== "native-resource" && source.sourcePath ? { sourcePath: source.sourcePath } : {}),
           },
           origin: options.origin,
         },

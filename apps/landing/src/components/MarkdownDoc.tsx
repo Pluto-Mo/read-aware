@@ -2,7 +2,7 @@ import { Children, isValidElement, type ReactElement, type ReactNode } from "rea
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useRouterState } from "@tanstack/react-router";
-import { localizePath, localeFromPathname } from "../lib/i18n";
+import { localizePath, localeFromPathname, servedHref } from "../lib/i18n";
 import { headingId } from "../lib/doc-headings";
 import { CodeBlock } from "./CodeBlock";
 import { markdownElements } from "./MarkdownElements";
@@ -22,7 +22,7 @@ function DocLink({ href = "", children }: { href?: string; children?: ReactNode 
   const locale = useRouterState({
     select: (state) => localeFromPathname(state.location.pathname),
   });
-  if (href.startsWith("/") && !href.startsWith("//")) return <a href={localizePath(href, locale)}>{children}</a>;
+  if (href.startsWith("/") && !href.startsWith("//")) return <a href={servedHref(localizePath(href, locale))}>{children}</a>;
   if (href.startsWith("#")) return <a href={href}>{children}</a>;
   return (
     <a href={href} target="_blank" rel="noopener noreferrer">

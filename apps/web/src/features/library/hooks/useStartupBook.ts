@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { forgetOpenReader, rememberedOpenReader } from "../../../platform/open-reader";
 import type { StartView } from "../../settings/lib/general-settings";
 import type { LibraryBook } from "../lib/library-types";
 
@@ -20,8 +21,28 @@ export function useStartupBook({
 }) {
   const preference = useRef(startView);
   const consumed = useRef(false);
+  // Read once. An Onyx density/engine restart kills the webview; the book that
+  // was on screen is more specific than the shelf's resume preference.
+  const pinnedBookId = useRef<string | null | undefined>(undefined);
+  if (pinnedBookId.current === undefined) pinnedBookId.current = rememberedOpenReader();
   useEffect(() => {
     if (consumed.current) return;
+    const pin = pinnedBookId.current;
+    if (pin) {
+      if (!ready || !idle) return;
+      consumed.current = true;
+      const book = books.find((item) => item.id === pin);
+      if (!book) {
+        forgetOpenReader();
+        return;
+      }
+      try {
+        openBook(book);
+      } catch (error) {
+        reportError(error);
+      }
+      return;
+    }
     if (!idle || preference.current !== "resume") {
       consumed.current = true;
       return;

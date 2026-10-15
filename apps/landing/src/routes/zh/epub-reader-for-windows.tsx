@@ -40,7 +40,7 @@ export const Route = createFileRoute("/zh/epub-reader-for-windows")({
         普通安装选 x64 EXE；需要通过 Windows Installer 管理安装时选 MSI；只想解压启动则选便携
         ZIP。便携包是免安装的程序分发形式，不代表阅读数据自动随程序目录一起移动。各版本都从
         <a href={RELEASES_URL}>官方 Release</a>下载，完整步骤见
-        <Link to="/zh/docs/install">安装指南</Link>。
+        <Link to="/zh/docs/install/">安装指南</Link>。
       </p>
       <h2>关于 Windows SmartScreen</h2>
       <p>
@@ -51,13 +51,13 @@ export const Route = createFileRoute("/zh/epub-reader-for-windows")({
       <h2>离线先读，需要时再连接</h2>
       <p>
         无需账号或订阅即可导入、阅读和批注。可选端到端加密同步让你在
-        <Link to="/zh/epub-reader-for-android">Android 手机</Link>
+        <Link to="/zh/epub-reader-for-android/">Android 手机</Link>
         继续阅读；免费账户有 50 MB 同步额度，付费方案扩容并可包含内置 AI。
       </p>
       <p>
         AI 需要联网，并把相关选文、问题和上下文交给所选模型服务商。自带 API Key 不向 ReadAware 付 AI
         订阅费，服务商调用费用另计。参见
-        <Link to="/zh/pricing">方案价格</Link>和<Link to="/zh/privacy">隐私说明</Link>。
+        <Link to="/zh/pricing/">方案价格</Link>和<Link to="/zh/privacy/">隐私说明</Link>。
       </p>
     </TopicPage>
   ),

@@ -288,8 +288,12 @@ fn upgrade_defers_incomplete_log_replay_and_ignores_old_checkpoints() {
         .unwrap()
         .is_none());
     // Upgrade an actual incomplete v53 schema. Do not erase its checkpoint-derived books.
-    conn.execute("DELETE FROM schema_migrations WHERE version=54", [])
-        .unwrap();
+    // Later migrations are rolled back too, so v54 runs again on the v53 shape.
+    conn.execute_batch(
+        "ALTER TABLE books DROP COLUMN source_path;
+         DELETE FROM schema_migrations WHERE version >= 54;",
+    )
+    .unwrap();
     super::super::checkpoints::set_log_complete(&conn, false).unwrap();
     run_migrations(&mut conn).unwrap();
     assert!(super::super::events::projections_stale_conn(&conn).unwrap());

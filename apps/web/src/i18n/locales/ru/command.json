@@ -46,6 +46,10 @@
     "goAgent": {
       "title": "Спросить ReadAware",
       "keywords": "агент ии чат спросить контекст заметки"
+    },
+    "importFolder": {
+      "title": "Импортировать папку",
+      "keywords": "добавить папка каталог библиотека пакет import folder"
     }
   },
   "layout": {

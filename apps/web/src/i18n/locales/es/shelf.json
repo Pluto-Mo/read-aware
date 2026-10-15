@@ -6,7 +6,8 @@
     "remove": "Quitar",
     "delete": "Eliminar",
     "close": "Cerrar",
-    "done": "Listo"
+    "done": "Listo",
+    "importFolder": "Importar carpeta"
   },
   "books_one": "{{count}} libro",
   "books_many": "{{count}} libros",
@@ -22,7 +23,10 @@
     "duplicate_one": "«{{title}}» ya está en tu biblioteca.",
     "duplicate_many": "Se omitieron {{count}} libros que ya están en tu biblioteca.",
     "duplicate_other": "Se omitieron {{count}} libros que ya están en tu biblioteca.",
-    "combined": "{{skipped}} Se importaron {{count}} nuevos."
+    "combined": "{{skipped}} Se importaron {{count}} nuevos.",
+    "failedTitle": "Algunos libros no se importaron",
+    "failed_one": "No se pudo importar «{{title}}».",
+    "failed_other": "No se pudieron importar {{count}} libros, entre ellos «{{title}}»."
   },
   "importDialog": {
     "title": "Importar libros",
@@ -141,5 +145,17 @@
     "newCollectionTitle_one": "Nueva colección para {{count}} libro",
     "newCollectionTitle_many": "Nueva colección para {{count}} libros",
     "newCollectionTitle_other": "Nueva colección para {{count}} libros"
+  },
+  "folderImport": {
+    "dialogTitle": "Elige una carpeta de libros",
+    "doneTitle": "Se importó «{{folder}}»",
+    "doneTitleMany_one": "Se importó {{count}} carpeta",
+    "doneTitleMany_other": "Se importaron {{count}} carpetas",
+    "imported_one": "{{count}} libro nuevo.",
+    "imported_other": "{{count}} libros nuevos.",
+    "duplicates_one": "{{count}} ya estaba en tu biblioteca.",
+    "duplicates_other": "{{count}} ya estaban en tu biblioteca.",
+    "agentHint": "Para agruparlos según sus carpetas originales, pídeselo al Agent.",
+    "empty": "«{{folder}}» no tiene libros para importar."
   }
 }

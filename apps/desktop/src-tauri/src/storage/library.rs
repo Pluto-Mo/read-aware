@@ -57,6 +57,10 @@ pub struct LibraryBook {
     pub narrativity: Option<String>,
     #[serde(default)]
     pub spoiler_sensitive: Option<bool>,
+    /// `book.imported.sourcePath`: where a folder import found the file,
+    /// relative to the picked folder. Read-only (events own it).
+    #[serde(default)]
+    pub source_path: Option<String>,
 }
 
 fn default_cover_status() -> String {
@@ -102,6 +106,7 @@ pub(crate) fn row_to_library_book(row: &rusqlite::Row) -> rusqlite::Result<Libra
         collection_id: row.get("collection_id")?,
         narrativity: row.get("narrativity")?,
         spoiler_sensitive: row.get("spoiler_sensitive")?,
+        source_path: row.get("source_path")?,
     })
 }
 
@@ -112,7 +117,8 @@ const BOOK_SELECT: &str = "SELECT b.id, b.title, b.author, b.format, b.file_name
         b.file_size, b.cover_status, b.cover_blob_key,
         (bo.storage_uri IS NOT NULL) AS cover_local, bo.sha256 AS cover_version,
         b.created_at, b.updated_at, b.last_opened_at, b.progress_percent,
-        b.reading_status, b.progress_json, b.starred, b.collection_id, b.narrativity, b.spoiler_sensitive
+        b.reading_status, b.progress_json, b.starred, b.collection_id, b.narrativity, b.spoiler_sensitive,
+        b.source_path
    FROM books b
    LEFT JOIN blob_objects bo ON bo.key = b.cover_blob_key AND bo.deleted_at IS NULL";
 

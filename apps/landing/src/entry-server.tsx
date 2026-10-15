@@ -27,11 +27,15 @@ export function staticPaths(): string[] {
 }
 
 export async function render(url: string): Promise<string> {
-  const pathname = new URL(url, "https://readaware.app").pathname;
+  const location = new URL(url, "https://readaware.app");
+  // The router runs with `trailingSlash: "always"`; a bare route path would
+  // trigger a redirect during load and render an empty document.
+  if (!location.pathname.endsWith("/")) location.pathname += "/";
+  const pathname = location.pathname;
   const i18n = await createLandingI18n(localeFromPathname(pathname));
   const router = createAppRouter({
     i18n,
-    history: createMemoryHistory({ initialEntries: [url] }),
+    history: createMemoryHistory({ initialEntries: [`${pathname}${location.search}`] }),
   });
   await router.load();
   return renderToString(<RouterProvider router={router} />);

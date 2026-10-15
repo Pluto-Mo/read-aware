@@ -69,6 +69,8 @@ export interface Book {
   sourceBlobKey: string;
   /** Content hash of the source file, for duplicate detection. */
   sourceSha256?: string;
+  /** Folder-relative origin of a folder import (`Books/Sci-fi/Dune.epub`). */
+  sourcePath?: string;
   /** Storage key of the extracted cover, if any. */
   coverBlobKey?: string;
   coverStatus: CoverStatus;

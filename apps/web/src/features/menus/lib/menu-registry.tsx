@@ -13,6 +13,7 @@ import {
   ChatCircle,
   ChatCircleDots,
   Copy,
+  FolderPlus,
   GearSix,
   Highlighter,
   ListBullets,
@@ -45,6 +46,7 @@ export const CORE_MENU_ITEMS: Record<MenuSurface, CoreMenuItemMeta[]> = {
   shelfHeader: [
     { id: "core:search", labelKey: "search", Icon: MagnifyingGlass },
     { id: "core:import", labelKey: "import", Icon: Plus },
+    { id: "core:importFolder", labelKey: "importFolder", Icon: FolderPlus },
     {
       id: "core:viewControl",
       labelKey: "viewControl",

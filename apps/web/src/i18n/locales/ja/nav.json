@@ -15,7 +15,8 @@
     "primaryNavigation": "メインナビゲーション",
     "stats": "読書統計",
     "settings": "設定",
-    "more": "その他"
+    "more": "その他",
+    "importFolder": "フォルダを読み込む"
   },
   "update": {
     "available": "アップデートがあります",

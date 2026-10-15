@@ -84,7 +84,10 @@ test("semantic commands retain explicit audit mappings after native callback rem
   expect(commands).toHaveLength(18);
   expect(commands.every((item) => item.rows.includes("UI03"))).toBe(true);
   expect(commands.find((item) => item.name === "open-book")!.rows).toContain("READ01");
-  expect(inventory.filter((item) => item.family === "Command action").map((item) => item.name)).toEqual(["importBook"]);
+  expect(inventory.filter((item) => item.family === "Command action").map((item) => item.name)).toEqual([
+    "importBook",
+    "importFolder",
+  ]);
 });
 
 test("a new semantic command cannot silently inherit a catch-all audit mapping", () => {

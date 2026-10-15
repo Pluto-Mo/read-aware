@@ -3,7 +3,7 @@ import { ArrowCounterClockwise } from "@phosphor-icons/react";
 import { useAtomValue } from "jotai";
 import { Button, IconButton, InlineError, Kbd } from "@read-aware/ui";
 import { cn } from "@read-aware/ui/cn";
-import { shortcutBindingsAtom } from "../../../state/ui";
+import { pageTurnSettingsAtom, shortcutBindingsAtom } from "../../../state/ui";
 import { isAndroid } from "../../../platform/environment";
 import { useLocale, useTranslation } from "../../../i18n";
 import { contributionText, resolvePluginText } from "../../plugins/lib/plugin-i18n";
@@ -21,6 +21,7 @@ import {
   INFO_SHORTCUTS,
   type InfoShortcut,
   chordToTokens,
+  infoShortcutKeys,
   pluginShortcutId,
   resolveBinding,
   resolvePluginBinding,
@@ -58,6 +59,7 @@ export function ShortcutsPanel() {
   const selectionActions = useAtomValue(selectionActionsAtom);
   const pluginCommands = useAtomValue(pluginCommandsAtom);
   const rows = useAtomValue(shortcutRowsAtom);
+  const { volumeKeyDirection } = useAtomValue(pageTurnSettingsAtom);
   const lookupAvailable = selectionActions.some((action) => action.role === "lookup");
   const { busy, rebind, reset, resetAll } = useShortcutPreferences();
   // Preference intents report their own failures (toast + log) and resolve to a flag.
@@ -199,7 +201,7 @@ export function ShortcutsPanel() {
                 key={shortcut.id}
                 borderless={index === 0 && editable.length === 0}
                 title={shortcutLabel(shortcut.id)}
-                control={<KeyTokens tokens={shortcut.keys} />}
+                control={<KeyTokens tokens={infoShortcutKeys(shortcut, volumeKeyDirection)} />}
               />
             ))}
           </SettingsGroup>

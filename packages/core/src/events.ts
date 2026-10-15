@@ -101,6 +101,12 @@ export type DomainEvent =
         sourceBlobKey: string;
         /** Content hash for reliable duplicate-import detection. */
         sourceSha256?: string;
+        /**
+         * Where a folder import found the file: the picked folder's name and
+         * the path below it, `/`-separated (`Books/Sci-fi/Dune.epub`). Never an
+         * absolute device path. Absent for single-file imports — additive field.
+         */
+        sourcePath?: string;
       }
     >
   | DomainEventEnvelope<"book.metadataEdited", { bookId: Id; title?: string; author?: string }>

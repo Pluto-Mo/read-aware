@@ -1,5 +1,6 @@
 mod android_update;
 mod app_environment;
+mod book_folders;
 mod book_metadata;
 mod comic_metadata;
 mod covers;
@@ -200,10 +201,10 @@ async fn sync_safe_area(app: tauri::AppHandle) -> Result<(), CommandError> {
 #[tauri::command]
 fn sync_safe_area() {}
 
-/// While the reader's sentence navigator is on, Android's volume keys step
-/// between sentences instead of changing the volume (see
-/// `MainActivity.dispatchKeyEvent`). The frontend toggles the capture as the
-/// mode starts/stops. Off Android it is a no-op so the command still resolves
+/// While captured, Android's volume keys navigate the reader — turning pages
+/// or stepping a text-unit mode — instead of changing the volume (see
+/// `MainActivity.dispatchKeyEvent`). The frontend captures while it holds a
+/// claim on the keys. Off Android it is a no-op so the command still resolves
 /// for `generate_handler!` — iOS offers no public API for volume-key capture.
 #[cfg(target_os = "android")]
 #[tauri::command]
@@ -237,6 +238,234 @@ async fn set_volume_key_capture(app: tauri::AppHandle, captured: bool) -> Result
 #[cfg(not(target_os = "android"))]
 #[tauri::command]
 fn set_volume_key_capture(_captured: bool) {}
+
+/// While a book is open, Android page-turn keys (and, on Onyx, the volume
+/// rocker and d-pad) turn pages instead of scrolling the WebView. The
+/// frontend releases the capture while a text field is focused. Off Android
+/// it is a no-op so the command still resolves for `generate_handler!`.
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn set_reader_page_key_capture(
+    app: tauri::AppHandle,
+    captured: bool,
+) -> Result<(), CommandError> {
+    on_main_thread(&app, move || {
+        use tao::platform::android::prelude::main_android_context;
+        let Some(ctx) = main_android_context() else {
+            log::warn!("setReaderPageKeyCapture: no android context yet");
+            return;
+        };
+        let Ok(vm) = (unsafe { jni::JavaVM::from_raw(ctx.java_vm.cast()) }) else {
+            return;
+        };
+        let Ok(mut env) = vm.attach_current_thread() else {
+            return;
+        };
+        let activity = unsafe { jni::objects::JObject::from_raw(ctx.context_jobject.cast()) };
+        if let Err(err) = env.call_method(
+            &activity,
+            "setReaderPageKeyCapture",
+            "(Z)V",
+            &[jni::objects::JValue::Bool(captured as u8)],
+        ) {
+            log::error!("setReaderPageKeyCapture JNI call failed: {err}");
+            let _ = env.exception_clear();
+        }
+    })
+    .await
+}
+
+#[cfg(not(target_os = "android"))]
+#[tauri::command]
+fn set_reader_page_key_capture(_captured: bool) {}
+
+/// Keep an Onyx panel awake for the lifetime of an open book. The activity
+/// no-ops on other devices. Off Android the command is a no-op.
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn set_reader_keep_awake(app: tauri::AppHandle, awake: bool) -> Result<(), CommandError> {
+    on_main_thread(&app, move || {
+        use tao::platform::android::prelude::main_android_context;
+        let Some(ctx) = main_android_context() else {
+            log::warn!("setReaderKeepAwake: no android context yet");
+            return;
+        };
+        let Ok(vm) = (unsafe { jni::JavaVM::from_raw(ctx.java_vm.cast()) }) else {
+            return;
+        };
+        let Ok(mut env) = vm.attach_current_thread() else {
+            return;
+        };
+        let activity = unsafe { jni::objects::JObject::from_raw(ctx.context_jobject.cast()) };
+        if let Err(err) = env.call_method(
+            &activity,
+            "setReaderKeepAwake",
+            "(Z)V",
+            &[jni::objects::JValue::Bool(awake as u8)],
+        ) {
+            log::error!("setReaderKeepAwake JNI call failed: {err}");
+            let _ = env.exception_clear();
+        }
+    })
+    .await
+}
+
+#[cfg(not(target_os = "android"))]
+#[tauri::command]
+fn set_reader_keep_awake(_awake: bool) {}
+
+/// Publish the open book's cover as the Onyx standby image. The activity
+/// no-ops on other devices. Off Android the command is a no-op. Closing the
+/// book does not clear the image — the ROM has no API to restore the previous
+/// screensaver.
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn set_onyx_lock_cover(app: tauri::AppHandle, book_id: String) -> Result<(), CommandError> {
+    let app_for_load = app.clone();
+    let prepared = crate::storage::blocking("set_onyx_lock_cover", move || {
+        let db = app_for_load.state::<crate::storage::Db>();
+        let data_dir = app_for_load.state::<crate::storage::DataDir>();
+        let conn = db.0.lock()?;
+        covers::prepare_lock_cover(&conn, &data_dir.0, &book_id)
+    })
+    .await?;
+    let Some(prepared) = prepared else {
+        return Ok(());
+    };
+    on_main_thread(&app, move || {
+        use tao::platform::android::prelude::main_android_context;
+        let Some(ctx) = main_android_context() else {
+            log::warn!("setLockCover: no android context yet");
+            return;
+        };
+        let Ok(vm) = (unsafe { jni::JavaVM::from_raw(ctx.java_vm.cast()) }) else {
+            return;
+        };
+        let Ok(mut env) = vm.attach_current_thread() else {
+            return;
+        };
+        let activity = unsafe { jni::objects::JObject::from_raw(ctx.context_jobject.cast()) };
+        let Ok(path) = env.new_string(&prepared.source_path) else {
+            return;
+        };
+        let Ok(title) = env.new_string(&prepared.title) else {
+            return;
+        };
+        let path_object = jni::objects::JObject::from(path);
+        let title_object = jni::objects::JObject::from(title);
+        if let Err(err) = env.call_method(
+            &activity,
+            "setLockCover",
+            "(Ljava/lang/String;Ljava/lang/String;)V",
+            &[
+                jni::objects::JValue::Object(&path_object),
+                jni::objects::JValue::Object(&title_object),
+            ],
+        ) {
+            log::error!("setLockCover JNI call failed: {err}");
+            let _ = env.exception_clear();
+        }
+    })
+    .await
+}
+
+#[cfg(not(target_os = "android"))]
+#[tauri::command]
+fn set_onyx_lock_cover(_book_id: String) {}
+
+/// Copy the book's file to public storage and open it in BOOX NeoReader.
+/// Off Android, and on non-Onyx devices, this reports "skipped". "started"
+/// means the copy is in flight; the activity emits `ra-system-reader` when
+/// NeoReader has launched or the handoff failed.
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn open_in_system_reader(
+    app: tauri::AppHandle,
+    book_id: String,
+    file_name: String,
+    mime_type: String,
+) -> Result<String, CommandError> {
+    let app_for_load = app.clone();
+    let source = crate::storage::blocking("open_in_system_reader", move || {
+        let db = app_for_load.state::<crate::storage::Db>();
+        let data_dir = app_for_load.state::<crate::storage::DataDir>();
+        let conn = db.0.lock()?;
+        let key = format!("bookfile:{book_id}");
+        match crate::storage::get_blob_record_inner(&conn, &data_dir.0, &key)? {
+            Some((path, _)) => Ok(Some(path.to_string_lossy().into_owned())),
+            None => Ok(None),
+        }
+    })
+    .await?;
+    let Some(source_path) = source else {
+        return Ok("missing".to_string());
+    };
+    on_main_thread(&app, move || {
+        use tao::platform::android::prelude::main_android_context;
+        let Some(ctx) = main_android_context() else {
+            log::warn!("openInSystemReader: no android context yet");
+            return "error:activity".to_string();
+        };
+        let Ok(vm) = (unsafe { jni::JavaVM::from_raw(ctx.java_vm.cast()) }) else {
+            return "error:jni".to_string();
+        };
+        let Ok(mut env) = vm.attach_current_thread() else {
+            return "error:jni".to_string();
+        };
+        let activity = unsafe { jni::objects::JObject::from_raw(ctx.context_jobject.cast()) };
+        let Ok(path) = env.new_string(&source_path) else {
+            return "error:jni".to_string();
+        };
+        let Ok(name) = env.new_string(&file_name) else {
+            return "error:jni".to_string();
+        };
+        let Ok(mime) = env.new_string(&mime_type) else {
+            return "error:jni".to_string();
+        };
+        let path_object = jni::objects::JObject::from(path);
+        let name_object = jni::objects::JObject::from(name);
+        let mime_object = jni::objects::JObject::from(mime);
+        let value = match env.call_method(
+            &activity,
+            "openInSystemReader",
+            "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+            &[
+                jni::objects::JValue::Object(&path_object),
+                jni::objects::JValue::Object(&name_object),
+                jni::objects::JValue::Object(&mime_object),
+            ],
+        ) {
+            Ok(value) => value,
+            Err(err) => {
+                log::error!("openInSystemReader JNI call failed: {err}");
+                let _ = env.exception_clear();
+                return "error:jni".to_string();
+            }
+        };
+        let Ok(object) = value.l() else {
+            return "error:jni".to_string();
+        };
+        if object.is_null() {
+            return "error:jni".to_string();
+        }
+        let jstr = jni::objects::JString::from(object);
+        let Ok(text) = env.get_string(&jstr) else {
+            return "error:jni".to_string();
+        };
+        text.into()
+    })
+    .await
+}
+
+#[cfg(not(target_os = "android"))]
+#[tauri::command]
+async fn open_in_system_reader(
+    _book_id: String,
+    _file_name: String,
+    _mime_type: String,
+) -> Result<&'static str, CommandError> {
+    Ok("skipped")
+}
 
 /// Move the Android task to the background (like pressing Home), keeping the
 /// process — and the loaded book — warm for an instant return. The web layer
@@ -1185,10 +1414,18 @@ pub fn run() {
             set_status_bar_hidden,
             sync_safe_area,
             set_volume_key_capture,
+            set_reader_page_key_capture,
+            set_reader_keep_awake,
+            set_onyx_lock_cover,
+            open_in_system_reader,
             storefront::app_store_storefront,
             move_task_to_back,
             book_pick_start,
             book_pick_poll,
+            book_folders::book_folder_pick,
+            book_folders::book_folder_pick_start,
+            book_folders::book_folder_pick_poll,
+            book_folders::book_folder_release,
             set_traffic_lights_visible,
             window_input::window_input_revision,
             list_system_fonts,

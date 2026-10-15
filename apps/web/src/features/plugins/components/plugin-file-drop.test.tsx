@@ -66,9 +66,12 @@ test("mounted drop target names its owner, blocks synthetic grants and double im
     ),
   );
   function Probe({ visible = true }: { visible?: boolean }) {
-    const active = useDropBookImport(async () => {
-      imports++;
-    });
+    const active = useDropBookImport(
+      async () => {
+        imports++;
+      },
+      (error) => errors.push(error),
+    );
     return (
       <>
         <output>{String(active)}</output>

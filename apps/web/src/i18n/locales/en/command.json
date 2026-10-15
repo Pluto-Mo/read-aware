@@ -44,6 +44,10 @@
     "goAgent": {
       "title": "Ask ReadAware",
       "keywords": "agent ai chat ask context notes"
+    },
+    "importFolder": {
+      "title": "Import folder",
+      "keywords": "add folder directory library books bulk"
     }
   },
   "layout": {

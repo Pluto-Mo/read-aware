@@ -15,7 +15,8 @@
     "primaryNavigation": "Navegación principal",
     "stats": "Estadísticas de lectura",
     "settings": "Ajustes",
-    "more": "Más"
+    "more": "Más",
+    "importFolder": "Importar carpeta"
   },
   "update": {
     "available": "Actualización disponible",

@@ -43,6 +43,10 @@
     "goAgent": {
       "title": "ReadAwareに聞く",
       "keywords": "エージェント AI チャット 質問 コンテキスト メモ"
+    },
+    "importFolder": {
+      "title": "フォルダを読み込む",
+      "keywords": "追加 フォルダ ディレクトリ 一括 import folder"
     }
   },
   "layout": {

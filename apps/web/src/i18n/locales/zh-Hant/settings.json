@@ -104,7 +104,32 @@
       "title": "頁面顏色",
       "description": "書籍的紙張。「自動」會跟隨應用程式主題；其餘為固定顏色。"
     },
-    "pageMargins": "頁邊距"
+    "pageMargins": "頁邊距",
+    "pageTurn": {
+      "title": "翻頁",
+      "description": "點擊和按鍵翻頁的方式。儲存在本裝置，對所有書生效。",
+      "tapZones": {
+        "label": "點擊翻頁",
+        "off": "關閉",
+        "sides": "左側上一頁，右側下一頁",
+        "forward": "兩側都翻下一頁"
+      },
+      "tapZoneWidth": {
+        "label": "點擊區域寬度",
+        "narrow": "窄",
+        "medium": "中",
+        "wide": "寬"
+      },
+      "volumeKeys": {
+        "title": "音量鍵翻頁",
+        "description": "開啟書時，音量鍵用來翻頁而不是調整音量；輸入文字時仍照常調整音量。"
+      },
+      "volumeKeyDirection": {
+        "label": "音量鍵方向",
+        "downForward": "音量減往後讀",
+        "upForward": "音量加往後讀"
+      }
+    }
   },
   "shortcuts": {
     "title": "快捷鍵",
@@ -671,7 +696,8 @@
       "highlight": "螢光標記",
       "underline": "底線",
       "addNote": "新增筆記",
-      "askAI": "問 AI"
+      "askAI": "問 AI",
+      "importFolder": "匯入資料夾"
     }
   },
   "search": {

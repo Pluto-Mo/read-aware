@@ -11,9 +11,10 @@ type ReaderPageTurnControlsProps = {
 
 /**
  * Explicit page-turn affordances pinned to the reader's left and right edges.
- * Tapping book content no longer turns the page — a stray click while reading
- * shouldn't cost you your place — so single-page mode offers these buttons
- * alongside wheel, swipe and keyboard navigation. Each button lives inside a
+ * By default tapping book content doesn't turn the page — a stray click while
+ * reading shouldn't cost you your place (tap zones are an opt-in reading
+ * preference) — so single-page mode offers these buttons alongside wheel,
+ * swipe and keyboard navigation. Each button lives inside a
  * non-interactive edge strip, so the surrounding gutter still falls through to
  * the shell toggle underneath.
  *

@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { clampPrimaryNavVisible, CORE_MENU_DEFAULTS, resolveSurfaceLayout } from "./menu-config";
+import {
+  clampPrimaryNavVisible,
+  CORE_MENU_DEFAULTS,
+  CORE_OVERFLOW_DEFAULTS,
+  resolveSurfaceLayout,
+} from "./menu-config";
 
 describe("shelf menu placement", () => {
   test("drops the former context item now that Agent is primary navigation", () => {
@@ -13,6 +18,23 @@ describe("shelf menu placement", () => {
 
     expect(layout.visible).not.toContain("core:context");
     expect(layout.overflow).not.toContain("core:context");
+  });
+
+  test("a built-in that starts in overflow joins a saved layout there, not in the header", () => {
+    // A layout saved before folder import existed.
+    const saved = { visible: ["core:search", "core:import", "core:settings"], overflow: ["core:stats"] };
+    const known = [...CORE_MENU_DEFAULTS.shelfHeader, ...CORE_OVERFLOW_DEFAULTS.shelfHeader];
+    const layout = resolveSurfaceLayout(saved, known, { defaultOverflowIds: CORE_OVERFLOW_DEFAULTS.shelfHeader });
+    expect(layout.visible).toEqual(["core:search", "core:import", "core:settings", "core:viewControl"]);
+    expect(layout.overflow).toEqual(["core:stats", "core:importFolder"]);
+    // Once the user places it, their choice stands.
+    const promoted = resolveSurfaceLayout(
+      { visible: [...saved.visible, "core:importFolder"], overflow: ["core:stats"] },
+      known,
+      { defaultOverflowIds: CORE_OVERFLOW_DEFAULTS.shelfHeader },
+    );
+    expect(promoted.visible).toContain("core:importFolder");
+    expect(promoted.overflow).not.toContain("core:importFolder");
   });
 });
 

@@ -79,6 +79,7 @@ export function toBookSummary(book: LibraryBook): BookSummary {
     lastOpenedAt: book.lastOpenedAt ?? undefined,
     fileName: book.fileName || undefined,
     fileSize: book.fileSize || undefined,
+    sourcePath: book.sourcePath ?? undefined,
     narrativity: book.narrativity ?? undefined,
     spoilerSensitive: book.spoilerSensitive ?? undefined,
   };

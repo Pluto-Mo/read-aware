@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 import { useAtom } from "jotai";
-import { CaretLeft, ChartLineUp, GearSix, MagnifyingGlass, Plus } from "@phosphor-icons/react";
+import { CaretLeft, ChartLineUp, FolderPlus, GearSix, MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import { IconButton, Tooltip } from "@read-aware/ui";
 import { cn } from "@read-aware/ui/cn";
 import { usePhoneViewport } from "@read-aware/ui/media";
@@ -10,7 +10,13 @@ import { desktopChromeKind, type DesktopChromeKind } from "../../../platform/env
 import { activeCollectionAtom, type TopNav } from "../../../state/ui";
 import { MenuOverflow, type MenuOverflowEntry } from "../../menus/components/MenuOverflow";
 import { coreMenuMeta } from "../../menus/lib/menu-registry";
-import { CORE_MENU_DEFAULTS, menuConfigAtom, pluginMenuId, resolveSurfaceLayout } from "../../menus/state/menu-config";
+import {
+  CORE_MENU_DEFAULTS,
+  CORE_OVERFLOW_DEFAULTS,
+  menuConfigAtom,
+  pluginMenuId,
+  resolveSurfaceLayout,
+} from "../../menus/state/menu-config";
 import { PluginHeaderItem } from "../../plugins/components/PluginHeaderCluster";
 import { openHeaderActionDialog } from "../../plugins/lib/open-header-action";
 import { renderPluginIcon } from "../../plugins/lib/plugin-icons";
@@ -26,6 +32,8 @@ type AppHeaderProps = {
   activeTopNav: TopNav;
   isImporting: boolean;
   onImport: () => void;
+  /** Import every book below a picked folder. */
+  onImportFolder: () => void;
   onOpenSettings: () => void;
   onOpenSearch: () => void;
   onTopNavChange: (topNav: TopNav) => void;
@@ -62,6 +70,7 @@ export function AppHeader({
   activeTopNav,
   isImporting,
   onImport,
+  onImportFolder,
   onOpenSettings,
   onOpenSearch,
   onTopNavChange,
@@ -90,10 +99,13 @@ export function AppHeader({
   // the user's order), the rest behind the vertical-dots overflow.
   const { t: tMenus } = useTranslation("settings");
   const menuConfig = useAtomValue(menuConfigAtom);
+  const coreShelfIds = [...CORE_MENU_DEFAULTS.shelfHeader, ...CORE_OVERFLOW_DEFAULTS.shelfHeader];
   const knownShelfIds = onShelf
-    ? [...CORE_MENU_DEFAULTS.shelfHeader, ...shelfPluginActions.map((a) => pluginMenuId(a.key))]
-    : CORE_MENU_DEFAULTS.shelfHeader;
-  const shelfLayout = resolveSurfaceLayout(menuConfig.shelfHeader, knownShelfIds);
+    ? [...coreShelfIds, ...shelfPluginActions.map((a) => pluginMenuId(a.key))]
+    : coreShelfIds;
+  const shelfLayout = resolveSurfaceLayout(menuConfig.shelfHeader, knownShelfIds, {
+    defaultOverflowIds: CORE_OVERFLOW_DEFAULTS.shelfHeader,
+  });
 
   // The primary navigation is canonical: it never yields width. When the
   // window narrows, cluster ICONS collapse into the dots menu instead — the
@@ -140,6 +152,18 @@ export function AppHeader({
         />
       </Tooltip>
     ),
+    "core:importFolder": (
+      <Tooltip content={t("header.importFolder")} side="bottom">
+        <IconButton
+          label={t("header.importFolder")}
+          size="sm"
+          onClick={onImportFolder}
+          disabled={isImporting}
+          className={headerIconButtonClass}
+          icon={<FolderPlus size={16} weight="regular" aria-hidden="true" />}
+        />
+      </Tooltip>
+    ),
     "core:viewControl": viewControl ?? null,
     "core:stats": (
       <Tooltip content={t("header.stats")} side="bottom">
@@ -172,6 +196,7 @@ export function AppHeader({
   const coreShelfRun: Record<string, () => void> = {
     "core:search": onOpenSearch,
     "core:import": onImport,
+    "core:importFolder": onImportFolder,
     "core:stats": () => onTopNavChange(statsActive ? "shelf" : "stats"),
     "core:settings": onOpenSettings,
   };
@@ -312,6 +337,13 @@ export function AppHeader({
                   label: isImporting ? t("header.importing") : t("header.import"),
                   icon: <Plus size={16} weight="regular" aria-hidden="true" />,
                   run: onImport,
+                  disabled: isImporting,
+                },
+                {
+                  id: "core:importFolder",
+                  label: t("header.importFolder"),
+                  icon: <FolderPlus size={16} weight="regular" aria-hidden="true" />,
+                  run: onImportFolder,
                   disabled: isImporting,
                 },
                 {

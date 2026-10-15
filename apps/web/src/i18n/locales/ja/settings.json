@@ -104,7 +104,32 @@
       "title": "ページの色",
       "description": "本の紙の色。「自動」はアプリのテーマに従い、その他は固定です。"
     },
-    "pageMargins": "余白"
+    "pageMargins": "余白",
+    "pageTurn": {
+      "title": "ページめくり",
+      "description": "タップとボタンでページをめくる方法。この端末に保存され、すべての本に適用されます。",
+      "tapZones": {
+        "label": "タップでめくる",
+        "off": "オフ",
+        "sides": "左で前へ、右で次へ",
+        "forward": "左右どちらも次へ"
+      },
+      "tapZoneWidth": {
+        "label": "タップ領域の幅",
+        "narrow": "狭い",
+        "medium": "標準",
+        "wide": "広い"
+      },
+      "volumeKeys": {
+        "title": "音量キーでめくる",
+        "description": "本を開いている間、音量キーで音量を変える代わりにページをめくります。文字入力中は通常どおり音量を変更します。"
+      },
+      "volumeKeyDirection": {
+        "label": "音量キーの向き",
+        "downForward": "音量−で先へ進む",
+        "upForward": "音量＋で先へ進む"
+      }
+    }
   },
   "shortcuts": {
     "title": "ショートカット",
@@ -671,7 +696,8 @@
       "highlight": "ハイライト",
       "underline": "下線",
       "addNote": "ノート追加",
-      "askAI": "AI に聞く"
+      "askAI": "AI に聞く",
+      "importFolder": "フォルダを読み込む"
     }
   },
   "search": {

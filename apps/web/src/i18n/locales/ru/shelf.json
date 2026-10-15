@@ -6,7 +6,8 @@
     "remove": "Удалить",
     "delete": "Удалить",
     "close": "Закрыть",
-    "done": "Готово"
+    "done": "Готово",
+    "importFolder": "Импортировать папку"
   },
   "books_one": "{{count}} книга",
   "books_few": "{{count}} книги",
@@ -24,7 +25,10 @@
     "duplicate_few": "Пропущено {{count}} книги — они уже есть в вашей библиотеке.",
     "duplicate_many": "Пропущено {{count}} книг — они уже есть в вашей библиотеке.",
     "duplicate_other": "Пропущено {{count}} книг — они уже есть в вашей библиотеке.",
-    "combined": "{{skipped}} Импортировано новых: {{count}}."
+    "combined": "{{skipped}} Импортировано новых: {{count}}.",
+    "failedTitle": "Некоторые книги не импортированы",
+    "failed_one": "Не удалось импортировать «{{title}}».",
+    "failed_other": "Не удалось импортировать книг: {{count}}, включая «{{title}}»."
   },
   "importDialog": {
     "title": "Импорт книг",
@@ -148,5 +152,17 @@
     "newCollectionTitle_few": "Новая коллекция для {{count}} книг",
     "newCollectionTitle_many": "Новая коллекция для {{count}} книг",
     "newCollectionTitle_other": "Новая коллекция для {{count}} книги"
+  },
+  "folderImport": {
+    "dialogTitle": "Выберите папку с книгами",
+    "doneTitle": "Папка «{{folder}}» импортирована",
+    "doneTitleMany_one": "Импортирована {{count}} папка",
+    "doneTitleMany_other": "Импортировано папок: {{count}}",
+    "imported_one": "Новых книг: {{count}}.",
+    "imported_other": "Новых книг: {{count}}.",
+    "duplicates_one": "Уже в библиотеке: {{count}}.",
+    "duplicates_other": "Уже в библиотеке: {{count}}.",
+    "agentHint": "Чтобы сгруппировать их по исходным папкам, попросите Agent.",
+    "empty": "В папке «{{folder}}» нет книг для импорта."
   }
 }

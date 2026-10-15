@@ -755,3 +755,35 @@ html[data-motion="reduced"] .ra-chat-caret {
   cursor: default;
   user-select: none;
 }
+
+/* Onyx e-ink. The Android shell sets data-eink; nothing else does.
+   16-level gray washes out hairlines, antialiased strokes, and transitions. */
+html[data-eink="1"] {
+  /* One slim bar. The phone reader's 3rem band plus a bottom toolbar is most
+     of what makes this surface look like a phone UI on a 7" panel. */
+  --ra-reader-bar-height: calc(2.75rem + var(--ra-safe-top));
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+  text-rendering: optimizeLegibility;
+  --color-fg-subtle: #57534e;
+  --color-border: #a8a29e;
+  --color-border-strong: #78716c;
+}
+
+html[data-theme="dark"][data-eink="1"] {
+  --color-fg-subtle: #d6d3d1;
+  --color-border: #a8a29e;
+  --color-border-strong: #d6d3d1;
+}
+
+html[data-eink="1"] :where(button, [role="button"]) {
+  min-height: 36px;
+}
+
+html[data-eink="1"],
+html[data-eink="1"] :where(*) {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

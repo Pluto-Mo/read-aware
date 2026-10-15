@@ -15,7 +15,8 @@
     "primaryNavigation": "Основная навигация",
     "stats": "Статистика чтения",
     "settings": "Настройки",
-    "more": "Ещё"
+    "more": "Ещё",
+    "importFolder": "Импортировать папку"
   },
   "update": {
     "available": "Доступно обновление",

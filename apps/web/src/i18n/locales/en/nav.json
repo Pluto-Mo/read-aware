@@ -15,7 +15,8 @@
     "primaryNavigation": "Primary navigation",
     "stats": "Reading stats",
     "settings": "Settings",
-    "more": "More"
+    "more": "More",
+    "importFolder": "Import folder"
   },
   "update": {
     "available": "Update available",

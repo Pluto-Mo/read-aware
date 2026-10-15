@@ -96,6 +96,7 @@ if (process.env.READING_AI_SURFACES_CASE === "1") {
               books: [],
               collections: [],
               importBook: () => {},
+              importFolder: () => {},
             }}
           />
         </>

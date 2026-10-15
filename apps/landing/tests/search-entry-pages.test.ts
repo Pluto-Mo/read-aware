@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
 import { DOWNLOADS } from "../src/lib/releases";
-import { LOCALES, localizePath } from "../src/lib/i18n";
+import { LOCALES, localizePath, servedHref } from "../src/lib/i18n";
 
 const dist = new URL("../dist/", import.meta.url);
 
@@ -63,13 +63,13 @@ test.each(["android", "windows"] as const)("%s topic has its own direct download
 
 test.each([...LOCALES])("%s navigation stays localized and secondary links are crawlable", async (locale) => {
   const page = await inspect(localizePath("/", locale));
-  const home = localizePath("/", locale).replace(/\/$/, "") || "/";
+  const home = servedHref(localizePath("/", locale));
   expect(page.header).toContain(home);
   expect(page.header).toContain(`${home}#download`);
   for (const target of ["/docs", "/pricing", "/changelog", "/privacy"]) {
-    expect(page.footer).toContain(localizePath(target, locale));
+    expect(page.footer).toContain(servedHref(localizePath(target, locale)));
   }
-  expect(page.footer.some((href) => href.endsWith("/blog"))).toBe(true);
+  expect(page.footer.some((href) => href.endsWith("/blog/"))).toBe(true);
 });
 
 test("Android screenshot has both themes and reserves the actual device aspect ratio", async () => {

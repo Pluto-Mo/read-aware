@@ -7,7 +7,12 @@ import { useStartupBook } from "./useStartupBook";
 
 test("startup resume waits for readiness, opens the last read book once and yields to newer user intent", async () => {
   const dom = new JSDOM("<div id='root'></div>", { url: "http://localhost" });
-  const values = { window: dom.window, document: dom.window.document, IS_REACT_ACT_ENVIRONMENT: true };
+  const values = {
+    window: dom.window,
+    document: dom.window.document,
+    localStorage: dom.window.localStorage,
+    IS_REACT_ACT_ENVIRONMENT: true,
+  };
   const globals = new Map(Object.keys(values).map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
   for (const [key, value] of Object.entries(values))
     Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
@@ -47,13 +52,15 @@ test("startup resume waits for readiness, opens the last read book once and yiel
       );
     });
   }
-  async function reset(next: Partial<typeof base> = {}) {
+  async function reset(next: Partial<typeof base> = {}, pin?: string) {
     if (root)
       await act(async () => {
         root!.unmount();
       });
     opened.length = 0;
     failures.length = 0;
+    dom.window.localStorage.clear();
+    if (pin) dom.window.localStorage.setItem("read-aware-open-reader", pin);
     props = { ...base, ...next };
     root = createRoot(dom.window.document.getElementById("root")!);
     await render();
@@ -98,6 +105,18 @@ test("startup resume waits for readiness, opens the last read book once and yiel
     expect(failures).toEqual([failure]);
     await render({ books: [...books] });
     expect(failures).toEqual([failure]);
+
+    await reset({ startView: "shelf", ready: false }, "edited-old-book");
+    dom.window.dispatchEvent(new dom.window.Event("pointerdown"));
+    await render({ ready: true });
+    expect(opened).toEqual(["edited-old-book"]);
+
+    await reset({ startView: "resume", ready: true }, "edited-old-book");
+    expect(opened).toEqual(["edited-old-book"]);
+
+    await reset({ startView: "shelf", ready: true }, "gone");
+    expect(opened).toEqual([]);
+    expect(dom.window.localStorage.getItem("read-aware-open-reader")).toBeNull();
   } finally {
     if (root)
       await act(async () => {

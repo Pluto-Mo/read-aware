@@ -371,7 +371,7 @@ function App() {
     openBook: handleCommandOpenBook,
     reportError: library.reportError,
   });
-  const dropImportActive = useDropBookImport(library.importSources);
+  const dropImportActive = useDropBookImport(library.importSources, library.reportError);
 
   const commandContext: CommandContext = {
     activeTopNav,
@@ -382,6 +382,10 @@ function App() {
     importBook: () => {
       openAppSurface("shelf");
       library.openImportPicker();
+    },
+    importFolder: () => {
+      openAppSurface("shelf");
+      library.openFolderImportPicker();
     },
   };
 
@@ -395,6 +399,19 @@ function App() {
         className="hidden"
         onChange={(event) => {
           void library.handleImportSelection(event);
+        }}
+      />
+      <input
+        ref={(element) => {
+          library.folderInputRef.current = element;
+          // Not in React's attribute types; the browser fallback's folder picker.
+          element?.setAttribute("webkitdirectory", "");
+        }}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          void library.handleFolderSelection(event);
         }}
       />
 
@@ -458,6 +475,7 @@ function App() {
             activeTopNav={activeTopNav}
             isImporting={library.isImporting}
             onImport={library.openImportPicker}
+            onImportFolder={library.openFolderImportPicker}
             onOpenSettings={() => setSettingsOpen(true)}
             onOpenSearch={() => setSearchModalOpen(true)}
             onTopNavChange={setActiveTopNav}
@@ -477,6 +495,7 @@ function App() {
                   openingBookId={openingBookId}
                   importingCount={library.importingCount}
                   onImport={library.openImportPicker}
+                  onImportFolder={library.openFolderImportPicker}
                   onOpenBook={handleOpenBook}
                   onRemoveBook={library.handleRemoveBook}
                   onToggleStar={library.handleToggleStar}

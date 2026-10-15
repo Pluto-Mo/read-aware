@@ -1,4 +1,5 @@
 import { hasCoarsePointer } from "../../../platform/environment";
+import { isEinkDocument } from "../../../platform/eink";
 import { localKV } from "../../../platform/local-store";
 import { copyEventCause, type DomainActor } from "../../../platform/domain-actor";
 import { isPluginRef } from "../../plugins/lib/plugin-theme";
@@ -242,22 +243,59 @@ function normalizeLanguageFonts(value: unknown): Record<string, ReaderFontPrefer
   return entries.length ? Object.fromEntries(entries) : undefined;
 }
 
+// Read once at module init. The Onyx shell injects `data-eink` at document
+// start, before this bundle evaluates. Other platforms never set it, so the
+// defaults below stay the desktop/phone split.
+const einkDefaults = isEinkDocument();
+
+/** Fresh e-ink body size. 36px on {@link readerBodyFontSize}'s e-ink ladder. */
+export const EINK_DEFAULT_FONT_SIZE: ReaderFontSize = "x-large";
+/** Fresh e-ink body weight. Inter ships this face. */
+export const EINK_DEFAULT_FONT_WEIGHT: ReaderFontWeight = "semibold";
+/**
+ * Device-local flag. Once set, a later choice of "medium" or "regular" is
+ * kept. The one-time rule, on e-ink only: stored `medium` size becomes
+ * {@link EINK_DEFAULT_FONT_SIZE}, and stored `regular` or `medium` weight
+ * becomes {@link EINK_DEFAULT_FONT_WEIGHT}.
+ */
+const EINK_READING_BUMP_KEY = "read-aware-eink-reading-bump";
+
+export function migrateEinkReading<T extends { fontSize: ReaderFontSize; fontWeight: ReaderFontWeight }>(
+  prefs: T,
+): Omit<T, "fontSize" | "fontWeight"> & { fontSize: ReaderFontSize; fontWeight: ReaderFontWeight } {
+  return {
+    ...prefs,
+    fontSize: prefs.fontSize === "medium" ? EINK_DEFAULT_FONT_SIZE : prefs.fontSize,
+    fontWeight:
+      prefs.fontWeight === "regular" || prefs.fontWeight === "medium" ? EINK_DEFAULT_FONT_WEIGHT : prefs.fontWeight,
+  };
+}
+
 export const DEFAULT_READER_SETTINGS: ReaderSettings = {
-  theme: "warm",
+  // Warm paper dithers on a 16-level panel; a white page stays clean.
+  theme: einkDefaults ? "light" : "warm",
   fontFamily: "curated:inter",
-  fontSize: "medium",
-  fontWeight: "regular",
-  lineSpacing: "comfortable",
+  // E-ink `x-large` is 36px on the e-ink ladder (see EINK_FONT_SIZE_MAP):
+  // above the 14sp floor, and a page size across the 280–350 dpi band.
+  fontSize: einkDefaults ? EINK_DEFAULT_FONT_SIZE : "medium",
+  // Eink guide: embed a bold face. Semibold is the real Inter face one step
+  // above the previous medium (500) default.
+  fontWeight: einkDefaults ? EINK_DEFAULT_FONT_WEIGHT : "regular",
+  // 1.85 leaves few lines on a short landscape page. 1.55 matches a native reader.
+  lineSpacing: einkDefaults ? "compact" : "comfortable",
   paragraphSpacing: "normal",
   textAlign: "book",
   // Touch screens read with mobile-typical tight margins by default; desktop
-  // keeps the roomier editorial measure. Evaluated once — it's a device trait.
-  pageMargins: hasCoarsePointer() ? "narrow" : "wide",
-  // Same device split: phones page one column at a time, desktop opens as a
-  // two-page spread (the renderer already folds a spread to one column while
-  // the viewport is portrait, so narrow desktop windows stay readable).
-  readingMode: hasCoarsePointer() ? "paginated-single" : "paginated-double",
-  fixedLayoutReadingMode: "scroll",
+  // keeps the roomier editorial measure. A 7" panel is in the same class.
+  // Evaluated once — it's a device trait.
+  pageMargins: einkDefaults || hasCoarsePointer() ? "narrow" : "wide",
+  // Same device split: phones and e-ink page one column at a time, desktop
+  // opens as a two-page spread (the renderer already folds a spread to one
+  // column while the viewport is portrait, so narrow desktop windows stay
+  // readable).
+  readingMode: einkDefaults || hasCoarsePointer() ? "paginated-single" : "paginated-double",
+  // Fixed-layout scroll is a stream of partials. Page the sheet instead.
+  fixedLayoutReadingMode: einkDefaults ? "paginated-single" : "scroll",
   // Most fixed-layout reading is text on paper, where following the palette is
   // the whole point of choosing one; readers of photography and art books can
   // turn it off per book.
@@ -266,7 +304,7 @@ export const DEFAULT_READER_SETTINGS: ReaderSettings = {
 
 export const DEFAULT_READER_PREFERENCES: ReaderSettingsPreferences = {
   ...DEFAULT_READER_SETTINGS,
-  theme: "warm",
+  theme: einkDefaults ? "light" : "warm",
 };
 
 /** Coerce a persisted font value to a valid selection, migrating legacy presets. */
@@ -352,10 +390,10 @@ export function normalizeFontWeight(value: unknown): ReaderFontWeight {
 export function getReaderPreferences(): ReaderSettingsPreferences {
   try {
     const raw = localKV.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_READER_PREFERENCES;
+    if (!raw) return bumpEinkReading(DEFAULT_READER_PREFERENCES);
     const parsed = JSON.parse(raw) as Partial<ReaderSettingsPreferences>;
     const languageFonts = normalizeLanguageFonts(parsed.languageFonts);
-    return {
+    return bumpEinkReading({
       ...(languageFonts ? { languageFonts } : {}),
       theme: normalizeReaderTheme(parsed.theme),
       fontFamily: normalizeFontFamily(parsed.fontFamily),
@@ -373,10 +411,24 @@ export function getReaderPreferences(): ReaderSettingsPreferences {
         normalizeReadingMode(parsed.fixedLayoutReadingMode) ?? DEFAULT_READER_PREFERENCES.fixedLayoutReadingMode,
       fixedLayoutColor:
         parsed.fixedLayoutColor === "original" ? "original" : DEFAULT_READER_PREFERENCES.fixedLayoutColor,
-    };
+    });
   } catch {
     return DEFAULT_READER_PREFERENCES;
   }
+}
+
+/**
+ * Apply {@link migrateEinkReading} once per device. The flag is written
+ * before the preference save so a listener that re-reads does not bump again.
+ */
+function bumpEinkReading(prefs: ReaderSettingsPreferences): ReaderSettingsPreferences {
+  if (!einkDefaults || localKV.getItem(EINK_READING_BUMP_KEY) === "1") return prefs;
+  const next = migrateEinkReading(prefs);
+  localKV.setItem(EINK_READING_BUMP_KEY, "1", "local", "system");
+  if (next.fontSize !== prefs.fontSize || next.fontWeight !== prefs.fontWeight) {
+    saveReaderPreferences(next, "system");
+  }
+  return next;
 }
 
 export function saveReaderPreferences(prefs: ReaderSettingsPreferences, origin: DomainActor = "user"): void {

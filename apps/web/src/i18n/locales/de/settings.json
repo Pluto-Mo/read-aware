@@ -104,7 +104,32 @@
       "title": "Seitenfarbe",
       "description": "Das Papier des Buches. „Auto“ folgt dem App-Design; die anderen sind fest."
     },
-    "pageMargins": "Seitenränder"
+    "pageMargins": "Seitenränder",
+    "pageTurn": {
+      "title": "Umblättern",
+      "description": "Wie Tippen und Tasten umblättern. Auf diesem Gerät gespeichert und für alle Bücher verwendet.",
+      "tapZones": {
+        "label": "Zum Umblättern tippen",
+        "off": "Aus",
+        "sides": "Links zurück, rechts weiter",
+        "forward": "Beide Seiten weiter"
+      },
+      "tapZoneWidth": {
+        "label": "Breite der Tippbereiche",
+        "narrow": "Schmal",
+        "medium": "Mittel",
+        "wide": "Breit"
+      },
+      "volumeKeys": {
+        "title": "Mit den Lautstärketasten umblättern",
+        "description": "Solange ein Buch geöffnet ist, blättern die Lautstärketasten um, statt die Lautstärke zu ändern. Beim Tippen ändern sie wie gewohnt die Lautstärke."
+      },
+      "volumeKeyDirection": {
+        "label": "Richtung der Lautstärketasten",
+        "downForward": "Leiser liest weiter",
+        "upForward": "Lauter liest weiter"
+      }
+    }
   },
   "shortcuts": {
     "title": "Tastenkürzel",
@@ -671,7 +696,8 @@
       "highlight": "Markieren",
       "underline": "Unterstreichen",
       "addNote": "Notiz",
-      "askAI": "KI fragen"
+      "askAI": "KI fragen",
+      "importFolder": "Ordner importieren"
     }
   },
   "search": {

@@ -931,6 +931,9 @@ pub(crate) const MIGRATIONS: &[(i64, &str, &str)] = &[
     // settles existing rows from the log under that rule, and an incomplete
     // bootstrap replays once its backfill completes.
     (54, "latest_reading_progress", "UPDATE sync_profile SET projections_stale=1 WHERE log_complete=0;"),
+    // `book.imported.sourcePath` (folder imports). No earlier event carries
+    // it, so existing rows need no backfill.
+    (55, "book_source_path", "ALTER TABLE books ADD COLUMN source_path TEXT;"),
 ];
 
 /// Rebuild the annotation FTS index from the table. Required after any VACUUM
@@ -949,7 +952,7 @@ pub(crate) fn rebuild_annotations_fts(conn: &Connection) -> Result<(), CommandEr
 /// The schema version a projection checkpoint is stamped with. Restoring one
 /// is only sound when the derived tables' shapes match exactly, so a
 /// checkpoint from a different version is ignored in favour of the log.
-pub(crate) const SCHEMA_VERSION: i64 = 54;
+pub(crate) const SCHEMA_VERSION: i64 = 55;
 
 /// The migration after which `materialize_legacy_covers` must run: the cover
 /// projection columns exist, the inline data-URL column still does.

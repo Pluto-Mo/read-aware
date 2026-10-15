@@ -109,6 +109,73 @@ function modelToolAssessment(
   ]);
 }
 
+/** A folder import's books: two source folders, plus one book picked on its own. */
+const FOLDER_BOOKS = [
+  { id: "folder-1" as Id, title: "The Stranger", sourcePath: "Library/Literature/The Stranger.epub" },
+  { id: "folder-2" as Id, title: "The Plague", sourcePath: "Library/Literature/The Plague.epub" },
+  { id: "folder-3" as Id, title: "Fortress Besieged", sourcePath: "Library/Literature/Fortress Besieged.txt" },
+  {
+    id: "folder-4" as Id,
+    title: "From Third World to First",
+    sourcePath: "Library/History/From Third World to First.epub",
+  },
+  { id: "folder-5" as Id, title: "The Guns of August", sourcePath: "Library/History/The Guns of August.mobi" },
+] as const;
+const LOOSE_BOOK_ID = "loose-1" as Id;
+
+/** Each top-level source folder maps to one collection named after it; the loose book stays ungrouped. */
+function folderGroupingCheck(observation: AgentEvalObservation): EvalAssessment {
+  const state =
+    observation.state && typeof observation.state === "object" && !Array.isArray(observation.state)
+      ? (observation.state as {
+          books?: { id: string; collectionId: string | null }[];
+          collections?: { id: string; name: string }[];
+        })
+      : {};
+  const books = state.books ?? [];
+  const collections = state.collections ?? [];
+  const collectionOf = (id: string) => books.find((book) => book.id === id)?.collectionId ?? null;
+  const nameOf = (collectionId: string | null) =>
+    collections.find((collection) => collection.id === collectionId)?.name ?? "";
+  const literature = FOLDER_BOOKS.slice(0, 3).map((book) => collectionOf(book.id));
+  const history = FOLDER_BOOKS.slice(3).map((book) => collectionOf(book.id));
+  const sameGroup = (group: (string | null)[]) => group[0] !== null && group.every((id) => id === group[0]);
+  return assessmentFromChecks([
+    {
+      id: "state.literature-grouped",
+      category: "state",
+      passed: sameGroup(literature) && /literature/i.test(nameOf(literature[0] ?? null)),
+      message: "Every Literature book shares one collection named after the folder",
+      expected: "one Literature collection",
+      actual: literature.map(nameOf),
+    },
+    {
+      id: "state.history-grouped",
+      category: "state",
+      passed: sameGroup(history) && /history/i.test(nameOf(history[0] ?? null)),
+      message: "Every History book shares one collection named after the folder",
+      expected: "one History collection",
+      actual: history.map(nameOf),
+    },
+    {
+      id: "state.folders-distinct",
+      category: "state",
+      passed: literature[0] !== history[0],
+      message: "The two source folders become different collections",
+      expected: "distinct collections",
+      actual: [literature[0], history[0]],
+    },
+    {
+      id: "state.loose-book-untouched",
+      category: "state",
+      passed: collectionOf(LOOSE_BOOK_ID) === null,
+      message: "A book imported on its own has no source folder and stays ungrouped",
+      expected: null,
+      actual: collectionOf(LOOSE_BOOK_ID),
+    },
+  ]);
+}
+
 export const toolsEvalSuite: EvalSuite<AgentEvalScenario> = {
   id: "tools",
   displayName: "工具调用与展示",
@@ -133,6 +200,42 @@ export const toolsEvalSuite: EvalSuite<AgentEvalScenario> = {
         },
         interactions: { forbiddenKinds: ["question", "permission"] },
       },
+    }),
+    defineAgentEvalScenario({
+      id: "group-shelf-by-source-folder",
+      evaluation: "programmatic",
+      description: "按文件夹导入记录的 sourcePath 把书分组到以原文件夹命名的集合，单独导入的书不动。",
+      tags: ["state", "global"],
+      scope: { kind: "global", threadId: "tools-folder-groups" },
+      seed: {
+        profile: "The reader has already completed onboarding.",
+        books: [
+          ...FOLDER_BOOKS.map((book) => ({ ...book, status: "unread" as const })),
+          { id: LOOSE_BOOK_ID, title: "A Single Download", author: "N. Loose", status: "reading" as const },
+        ],
+      },
+      turns: [{ text: "I just imported my book folder. Group those books by the folders they came from." }],
+      expectation: {
+        tools: { required: ["list_books", "manage_collection"], noErrors: true },
+        interactions: { forbiddenKinds: ["question", "permission"] },
+      },
+      criteria: {
+        literature: FOLDER_BOOKS.slice(0, 3).map((book) => book.sourcePath),
+        history: FOLDER_BOOKS.slice(3).map((book) => book.sourcePath),
+        ungrouped: LOOSE_BOOK_ID,
+      },
+      observeState: ({ stores }) => ({
+        books: stores.books.map((book) => ({ id: book.id, collectionId: book.collectionId ?? null })),
+        collections: stores.collections.map((collection) => ({ id: collection.id, name: collection.name })),
+      }),
+      evaluate: (observation) =>
+        combineAssessments(
+          evaluateAgentTrace(observation, {
+            tools: { required: ["list_books", "manage_collection"], noErrors: true },
+            interactions: { forbiddenKinds: ["question", "permission"] },
+          }),
+          folderGroupingCheck(observation),
+        ),
     }),
     defineAgentEvalScenario({
       id: "humane-reading-stats",

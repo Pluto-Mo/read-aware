@@ -6,7 +6,8 @@
     "remove": "移除",
     "delete": "删除",
     "close": "关闭",
-    "done": "完成"
+    "done": "完成",
+    "importFolder": "导入文件夹"
   },
   "books_other": "{{count}} 本书",
   "workspace": {
@@ -18,7 +19,10 @@
   },
   "importNotice": {
     "duplicate_other": "已跳过 {{count}} 本已在你书库中的书籍。",
-    "combined": "{{skipped}} 已导入 {{count}} 本新书。"
+    "combined": "{{skipped}} 已导入 {{count}} 本新书。",
+    "failedTitle": "有些书没能导入",
+    "failed_one": "《{{title}}》无法导入。",
+    "failed_other": "{{count}} 本书无法导入，包括《{{title}}》。"
   },
   "importDialog": {
     "title": "导入书籍",
@@ -127,5 +131,17 @@
   },
   "dragDock": {
     "newCollectionTitle_other": "为 {{count}} 本书新建收藏集"
+  },
+  "folderImport": {
+    "dialogTitle": "选择一个书籍文件夹",
+    "doneTitle": "已导入「{{folder}}」",
+    "doneTitleMany_one": "已导入 {{count}} 个文件夹",
+    "doneTitleMany_other": "已导入 {{count}} 个文件夹",
+    "imported_one": "新增 {{count}} 本书。",
+    "imported_other": "新增 {{count}} 本书。",
+    "duplicates_one": "{{count}} 本已在书架上。",
+    "duplicates_other": "{{count}} 本已在书架上。",
+    "agentHint": "想按原来的文件夹分组，可以让 Agent 帮你整理。",
+    "empty": "「{{folder}}」里没有可导入的书。"
   }
 }

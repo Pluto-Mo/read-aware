@@ -243,6 +243,9 @@ function blogPostingJsonLd(routePath, title, description, post) {
 const searchPages = [];
 for (const routePath of paths) {
   let body = await render(routePath);
+  // A redirect or router failure during SSR yields an empty string; shipping
+  // that would leave crawlers an empty `<div id="root">`.
+  if (!body.trim()) throw new Error(`Prerender produced an empty document for ${routePath}`);
 
   // <HeadContent /> emits the route's <title>/<meta name="description"> where
   // it sits in the body markup; lift them into the document head so parsers

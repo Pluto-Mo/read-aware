@@ -508,6 +508,10 @@ export const sources: Record<string, string> = {
   MODETIMER: "apps/web/src/features/reader/hooks/useSessionTimer.ts",
   SETDOMAIN: "apps/web/src/domain/settings/domain.ts",
   PREFS: "apps/web/src/features/settings/lib/reader-settings.ts",
+  PAGETURNPREFS: "apps/web/src/domain/settings/page-turn-settings.ts",
+  PAGETURNTAP: "apps/web/src/features/reader/lib/page-turn-tap.ts",
+  VOLUMEKEYS: "apps/web/src/platform/volume-keys.ts",
+  VOLUMEKEYSTEPS: "apps/web/src/features/reader/hooks/useVolumeKeySteps.ts",
   OVERRIDES: "apps/web/src/features/settings/lib/reader-overrides.ts",
   GENERAL: "apps/web/src/features/settings/lib/general-settings.ts",
   AIPREFS: "apps/web/src/features/settings/lib/ai-preferences.ts",
@@ -3334,7 +3338,7 @@ groups.push(
         absent("不开放：不在当前 desktop 产品范围"),
         ["RUST"],
         "cfg 分支或桌面 no-op",
-        "Android updater/book picker/background task 和 App Store storefront 不计为桌面插件缺口",
+        "Android updater/book picker/background task、移动端文件夹导入选择器（SAF 目录树 / iOS 文件夹 UIDocumentPicker）和 App Store storefront 不计为桌面插件缺口",
       ),
     ],
   },
@@ -3941,6 +3945,10 @@ export const staticSettingPaths = [
   "shortcuts.zoom-out",
   "shortcuts.zoom-reset",
   "shortcuts.zoom-lock",
+  "reading.pageTurn.tapZones",
+  "reading.pageTurn.tapZoneWidth",
+  "reading.pageTurn.volumeKeys",
+  "reading.pageTurn.volumeKeyDirection",
 ];
 const retiredSettingSlot = 25;
 export const settingPathId = (path: string): string => {
@@ -3985,11 +3993,13 @@ const settingRows = staticSettingPaths.map((path) => {
               ? "已有真实 Agent 消费者：selection 关闭过滤自动附件与历史附件检索/匹配；任一文本开关关闭都移除可能重叠的 viewport；surrounding 关闭不装配 grounding。保留本地附件和手写问题，get_reading_session 同样过滤文本；切策略重建缓存上下文。收紧返回 ai/context-changed，取消在途/准备中回合和排队记忆任务，重开不复活旧请求。Agent 设置与授权 Worker 设置写入、四组合请求、SQLite 历史保留和在途传输取消已在隔离 macOS debug 验证。LLM 1.1 readingContext 已将结构化正文纳入同一过滤/取消，Dictionary 1.3 已迁移，必需字段被禁止时报 ai/context-withheld；双端三模式四组合、实际缓存/拒绝、重试及三并发取消有桌面证据。插件本地 selection/lookup 回调、任意自行组装 prompt/HTTP/TTS、独立正文/标注检索与旧回答/记忆/纪要不因此清除或禁用；完整隐私、packaged/跨平台仍未闭合，保留部分。"
               : readonly
                 ? "只读状态，不返回密钥/端点凭据；不等于配置命令。"
-                : path === "general.autoUpdate"
-                  ? "实际消费者只控制自动检查，不表示无批准自动安装。"
-                  : path.startsWith("menus.")
-                    ? "只影响菜单排列/显示，不调用菜单动作。"
-                    : "目录有读写且存在产品消费者；仍受格式、配置、scope、授权与持久化契约约束。";
+                : path.startsWith("reading.pageTurn.")
+                  ? "settings 1.11：设备本地、仅 global 的翻页输入偏好，不进入书级覆盖/阅读重置。阅读器点击区按阅读根宽度分侧（RTL 镜像、FXL 先平移、书末进完成页），音量键经 claimVolumeKeys 仲裁（文本单元模式占用时让位，输入框聚焦归还）；音量键两项仅 Android 生效。目录/Agent/插件与解析器定向测试通过，真实 Android 按键与触屏点击待集中验收。"
+                  : path === "general.autoUpdate"
+                    ? "实际消费者只控制自动检查，不表示无批准自动安装。"
+                    : path.startsWith("menus.")
+                      ? "只影响菜单排列/显示，不调用菜单动作。"
+                      : "目录有读写且存在产品消费者；仍受格式、配置、scope、授权与持久化契约约束。";
   return cap(
     settingPathId(path),
     path,
@@ -4048,17 +4058,19 @@ const settingRows = staticSettingPaths.map((path) => {
                     ? ["MARKPREFS", "TEXTACTIONS"]
                     : path === "general.updateChannel"
                       ? ["UPDATECHANNEL", "ABOUT"]
-                      : [
-                          path.startsWith("ai.preferences")
-                            ? "AIPREFS"
-                            : path.startsWith("general")
-                              ? "GENERAL"
-                              : path.startsWith("reading")
-                                ? "PREFS"
-                                : path.startsWith("menus")
-                                  ? "MENUSTATE"
-                                  : "UI",
-                        ]),
+                      : path.startsWith("reading.pageTurn.")
+                        ? ["PAGETURNPREFS", "PAGETURNTAP", "VOLUMEKEYS", "VOLUMEKEYSTEPS"]
+                        : [
+                            path.startsWith("ai.preferences")
+                              ? "AIPREFS"
+                              : path.startsWith("general")
+                                ? "GENERAL"
+                                : path.startsWith("reading")
+                                  ? "PREFS"
+                                  : path.startsWith("menus")
+                                    ? "MENUSTATE"
+                                    : "UI",
+                          ]),
     ],
     ineffective
       ? "仅设置页/设置存储/目录；效果未接"
