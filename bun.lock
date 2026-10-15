@@ -243,6 +243,16 @@
         "react-i18next": "^17.0.8",
       },
     },
+    "plugins/annotation-sync": {
+      "name": "@read-aware/plugin-annotation-sync",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@read-aware/plugin-types": "workspace:*",
+        "@read-aware/tsconfig": "workspace:*",
+        "@types/bun": "1.3.13",
+        "typescript": "~5.8.3",
+      },
+    },
     "plugins/dictionary": {
       "name": "@read-aware/plugin-dictionary",
       "version": "1.4.0",
@@ -806,6 +816,8 @@
     "@read-aware/landing": ["@read-aware/landing@workspace:apps/landing"],
 
     "@read-aware/pitch-video": ["@read-aware/pitch-video@workspace:marketing/pitch-video"],
+
+    "@read-aware/plugin-annotation-sync": ["@read-aware/plugin-annotation-sync@workspace:plugins/annotation-sync"],
 
     "@read-aware/plugin-dictionary": ["@read-aware/plugin-dictionary@workspace:plugins/dictionary"],
 

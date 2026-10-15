@@ -251,8 +251,8 @@
 | <a id="AI08"></a>AI08 | 书内 scope/游标/选区自动 grounding | 实装 | **自动**：thread + grounding-context<br>[设计] 自动且有来源的上下文 | **接通**：agentContextProviders / agentRetrievalProviders 补充有来源的数据块，不能覆写核心<br>[设计] 受限上下文贡献 | 书内 Agent；插件上下文/检索提供者 | 自动注入不等于独立工具；不允许插件注入更高优先级系统策略，插件块受同一文本隐私策略过滤 | [THREAD](../../packages/agent/src/runtime/thread.ts) [GROUND](../../packages/agent/src/runtime/grounding-context.ts) [EXTOOLS](../../apps/web/src/features/plugins/runtime/plugin-tools.ts) | L07 |
 | <a id="AI09"></a>AI09 | 剧透边界、请求允许超前内容 | 实装 | **接通**：read_chapter/search_book_text/query_book_graph + 批准<br>[设计] 宿主策略 | **接通**：library 域授权读取正文；不存在模型剧透审批（有意）<br>[设计] 数据授权与 Agent 剧透策略分开 | 书内 Agent；插件正文读取 | 访问权限不是剧透许可；插件提供上下文需要 provenance/fence 政策，宿主在装配时按 Agent 围栏过滤而非信任插件声明 | [SPOILER](../../packages/agent/src/tools/spoiler-permission.ts) [TEXTTOOLS](../../packages/agent/src/tools/book-text-tools.ts) [GRAPHTOOLS](../../packages/agent/src/tools/graph-tools.ts) [LIB](../../apps/web/src/domain/library.ts) | L07 |
 | <a id="AI10"></a>AI10 | 注册供模型使用的插件工具 | 实装 | **扩展**：extraTools(scope) 进入真实 registry<br>[设计] 受 scope/授权控制工具 | **接通**：agentTools.register<br>[设计] 工具贡献 | Dictionary 5 个；RSS 5 个 | 插件安装/启用后才存在；不能将拥有插件 UI 视为已经有 Agent 工具 | [REGISTRY](../../packages/agent/src/tools/registry.ts) [PORTS](../../apps/web/src/features/ai/agent/ports/index.ts) [EXTOOLS](../../apps/web/src/features/plugins/runtime/plugin-tools.ts) [DICTTOOLS](../../plugins/dictionary/src/agent-tools.ts) [RSSTOOLS](../../plugins/rss-reader/src/agent-tools.ts) | L06 |
-| <a id="AI11"></a>AI11 | 每轮上下文 provider | 实装 | **自动**：plugin context provider 注入线程<br>[设计] 受预算/来源约束消费 | **接通**：agentContextProviders.register<br>[设计] 上下文贡献 | 无第一方插件消费者（Reading Goals 于 2026-09-21 移除；曾按请求书籍 scope 提供阅读目标） | 真实 Worker 到受控推理服务已验；此前没有专属目标编辑工具；0.4接线如下，不等于任意上下文语义已验收 Reading Goals0.4新增双scope get/set/clear_reading_goal，写入经宿主确认并比较所见revision；UI共用goals文档条件写，下一轮上下文/候选读取同一数据。schema2首次按书提升旧KV，文档/空目标墓碑优先，旧KV清理失败拒绝并可重试。新增agent:tools，沿用Storage2.1而非新宿主API；新协议原生升级/批准/持久化与模型组合待集中验收，不等于直接写入或删除已提升记忆。 | [EXTOOLS](../../apps/web/src/features/plugins/runtime/plugin-tools.ts) [THREAD](../../packages/agent/src/runtime/thread.ts) [API](../../packages/plugin-types/src/index.ts) | L06 |
-| <a id="AI12"></a>AI12 | 按需插件检索 provider | 实装 | **扩展**：自动生成 retrieve 工具<br>[设计] 按需有界检索工具 | **接通**：agentRetrievalProviders.register<br>[设计] 检索贡献 | Dictionary saved-vocabulary | 名称隔离/限量由 adapter 控制；查询结果不是可信指令 | [EXTOOLS](../../apps/web/src/features/plugins/runtime/plugin-tools.ts) [DICTTOOLS](../../plugins/dictionary/src/agent-tools.ts) [REGISTRY](../../packages/agent/src/tools/registry.ts) | L06 |
+| <a id="AI11"></a>AI11 | 每轮上下文 provider | 实装 | **自动**：plugin context provider 注入线程<br>[设计] 受预算/来源约束消费 | **接通**：agentContextProviders.register<br>[设计] 上下文贡献 | Annotation Sync 按当前书注入已导入摘录（Reading Goals 于 2026-09-21 移除；曾按请求书籍 scope 提供阅读目标） | 真实 Worker 到受控推理服务已验；此前没有专属目标编辑工具；0.4接线如下，不等于任意上下文语义已验收 Reading Goals0.4新增双scope get/set/clear_reading_goal，写入经宿主确认并比较所见revision；UI共用goals文档条件写，下一轮上下文/候选读取同一数据。schema2首次按书提升旧KV，文档/空目标墓碑优先，旧KV清理失败拒绝并可重试。新增agent:tools，沿用Storage2.1而非新宿主API；新协议原生升级/批准/持久化与模型组合待集中验收，不等于直接写入或删除已提升记忆。 | [EXTOOLS](../../apps/web/src/features/plugins/runtime/plugin-tools.ts) [THREAD](../../packages/agent/src/runtime/thread.ts) [API](../../packages/plugin-types/src/index.ts) | L06 |
+| <a id="AI12"></a>AI12 | 按需插件检索 provider | 实装 | **扩展**：自动生成 retrieve 工具<br>[设计] 按需有界检索工具 | **接通**：agentRetrievalProviders.register<br>[设计] 检索贡献 | Dictionary saved-vocabulary；Annotation Sync imported-annotations | 名称隔离/限量由 adapter 控制；查询结果不是可信指令 | [EXTOOLS](../../apps/web/src/features/plugins/runtime/plugin-tools.ts) [DICTTOOLS](../../plugins/dictionary/src/agent-tools.ts) [REGISTRY](../../packages/agent/src/tools/registry.ts) | L06 |
 
 ### 长期记忆、画像与图谱
 
@@ -1539,6 +1539,7 @@
 
 | 当前注册项 | 矩阵行 | 说明 |
 | --- | --- | --- |
+| `annotation-sync` | [AI08](#AI08) [AI10](#AI10) [AI11](#AI11) [AI12](#AI12) [SYS04](#SYS04) [CFG09](#CFG09) [LIB01](#LIB01) [TXT02](#TXT02) [SYS11](#SYS11) | [代码] 源码版本 0.1.0；源码存在不等于打包、安装、启用或模型可调用 |
 | `dictionary` | [EXT09](#EXT09) [AI12](#AI12) [READ07](#READ07) [LIB01](#LIB01) | [代码] 源码版本 1.4.0；源码存在不等于打包、安装、启用或模型可调用 |
 | `editorial-themes` | [EXT08](#EXT08) | [代码] 源码版本 1.0.0；源码存在不等于打包、安装、启用或模型可调用 |
 | `jumper` | [TXT02](#TXT02) [TXT07](#TXT07) [READ01](#READ01) [READ05](#READ05) [READ06](#READ06) [READ07](#READ07) [READ13](#READ13) [EXT02](#EXT02) [SYS02](#SYS02) [AI05](#AI05) | [代码] 源码版本 0.13.0；源码存在不等于打包、安装、启用或模型可调用 |
@@ -1547,31 +1548,11 @@
 | `tts` | [READ17](#READ17) [READ18](#READ18) | [代码] 源码版本 0.6.0；源码存在不等于打包、安装、启用或模型可调用 |
 | `webdav-sync` | [OPS04](#OPS04) | [代码] 源码版本 0.3.0；源码存在不等于打包、安装、启用或模型可调用 |
 
-### Plugin Agent contribution
-
-| 当前注册项 | 矩阵行 | 说明 |
-| --- | --- | --- |
-| `plugin_dictionary_delete_saved_word` | [EXT09](#EXT09) [AI12](#AI12) [READ07](#READ07) [LIB01](#LIB01) | [代码] global/book；插件启用后才进入工具集；来源 plugins/dictionary/src/agent-tools.ts |
-| `plugin_dictionary_export_vocabulary` | [EXT09](#EXT09) [AI12](#AI12) [READ07](#READ07) [LIB01](#LIB01) | [代码] global/book；插件启用后才进入工具集；来源 plugins/dictionary/src/agent-tools.ts |
-| `plugin_dictionary_retrieve_saved_vocabulary` | [EXT09](#EXT09) [AI12](#AI12) [READ07](#READ07) [LIB01](#LIB01) | [代码] global/book；插件启用后才进入工具集；来源 plugins/dictionary/src/agent-tools.ts |
-| `plugin_dictionary_lookup_word` | [EXT09](#EXT09) [AI12](#AI12) [READ07](#READ07) [LIB01](#LIB01) | [代码] global/book；插件启用后才进入工具集；来源 plugins/dictionary/src/agent-tools.ts |
-| `plugin_dictionary_get_vocabulary` | [EXT09](#EXT09) [AI12](#AI12) [READ07](#READ07) [LIB01](#LIB01) | [代码] global/book；插件启用后才进入工具集；来源 plugins/dictionary/src/agent-tools.ts |
-| `plugin_dictionary_save_word` | [EXT09](#EXT09) [AI12](#AI12) [READ07](#READ07) [LIB01](#LIB01) | [代码] global/book；插件启用后才进入工具集；来源 plugins/dictionary/src/agent-tools.ts |
-| `plugin_jumper_list_bookmarks` | [TXT02](#TXT02) [TXT07](#TXT07) [READ01](#READ01) [READ05](#READ05) [READ06](#READ06) [READ07](#READ07) [READ13](#READ13) [EXT02](#EXT02) [SYS02](#SYS02) [AI05](#AI05) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/jumper/src/bookmark-tools.ts |
-| `plugin_jumper_inspect_bookmark_location` | [TXT02](#TXT02) [TXT07](#TXT07) [READ01](#READ01) [READ05](#READ05) [READ06](#READ06) [READ07](#READ07) [READ13](#READ13) [EXT02](#EXT02) [SYS02](#SYS02) [AI05](#AI05) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/jumper/src/bookmark-tools.ts |
-| `plugin_jumper_save_bookmark` | [TXT02](#TXT02) [TXT07](#TXT07) [READ01](#READ01) [READ05](#READ05) [READ06](#READ06) [READ07](#READ07) [READ13](#READ13) [EXT02](#EXT02) [SYS02](#SYS02) [AI05](#AI05) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/jumper/src/bookmark-tools.ts |
-| `plugin_jumper_manage_bookmark` | [TXT02](#TXT02) [TXT07](#TXT07) [READ01](#READ01) [READ05](#READ05) [READ06](#READ06) [READ07](#READ07) [READ13](#READ13) [EXT02](#EXT02) [SYS02](#SYS02) [AI05](#AI05) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/jumper/src/bookmark-tools.ts |
-| `plugin_rss_reader_storage_policy` | [EXT10](#EXT10) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/rss-reader/src/agent-tools.ts |
-| `plugin_rss_reader_import_opml` | [EXT10](#EXT10) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/rss-reader/src/agent-tools.ts |
-| `plugin_rss_reader_unsubscribe_feed` | [EXT10](#EXT10) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/rss-reader/src/agent-tools.ts |
-| `plugin_rss_reader_list_feeds` | [EXT10](#EXT10) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/rss-reader/src/agent-tools.ts |
-| `plugin_rss_reader_subscribe_feed` | [EXT10](#EXT10) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/rss-reader/src/agent-tools.ts |
-| `plugin_rss_reader_refresh_feed` | [EXT10](#EXT10) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/rss-reader/src/agent-tools.ts |
-
 ### Plugin setting declaration
 
 | 当前注册项 | 矩阵行 | 说明 |
 | --- | --- | --- |
+| `plugins.annotation-sync.api-key` | [SYS04](#SYS04) | secret；不进入 Agent/普通 settings catalog |
 | `plugins.rss-reader.articleLimit` | [CFG09](#CFG09) | number；非敏感配置；字段存在不等于其功能有 Agent 工具 |
 | `plugins.sentence-reader.unitId` | [CFG09](#CFG09) | choice；非敏感配置；字段存在不等于其功能有 Agent 工具 |
 | `plugins.sentence-reader.tapToAdvance` | [CFG09](#CFG09) | toggle；非敏感配置；字段存在不等于其功能有 Agent 工具 |
@@ -1596,6 +1577,29 @@
 | `plugins.webdav-sync.username` | [CFG09](#CFG09) | text；非敏感配置；字段存在不等于其功能有 Agent 工具 |
 | `plugins.webdav-sync.password` | [SYS04](#SYS04) | secret；不进入 Agent/普通 settings catalog |
 | `plugins.webdav-sync.basePath` | [CFG09](#CFG09) | text；非敏感配置；字段存在不等于其功能有 Agent 工具 |
+
+### Plugin Agent contribution
+
+| 当前注册项 | 矩阵行 | 说明 |
+| --- | --- | --- |
+| `plugin_annotation_sync_list_imported_annotations` | [AI08](#AI08) [AI10](#AI10) [AI11](#AI11) [AI12](#AI12) [SYS04](#SYS04) [CFG09](#CFG09) [LIB01](#LIB01) [TXT02](#TXT02) [SYS11](#SYS11) | [代码] global/book；插件启用后才进入工具集；来源 plugins/annotation-sync/src/agent.ts |
+| `plugin_annotation_sync_retrieve_imported_annotations` | [AI08](#AI08) [AI10](#AI10) [AI11](#AI11) [AI12](#AI12) [SYS04](#SYS04) [CFG09](#CFG09) [LIB01](#LIB01) [TXT02](#TXT02) [SYS11](#SYS11) | [代码] global/book；插件启用后才进入工具集；来源 plugins/annotation-sync/src/agent.ts |
+| `plugin_dictionary_delete_saved_word` | [EXT09](#EXT09) [AI12](#AI12) [READ07](#READ07) [LIB01](#LIB01) | [代码] global/book；插件启用后才进入工具集；来源 plugins/dictionary/src/agent-tools.ts |
+| `plugin_dictionary_export_vocabulary` | [EXT09](#EXT09) [AI12](#AI12) [READ07](#READ07) [LIB01](#LIB01) | [代码] global/book；插件启用后才进入工具集；来源 plugins/dictionary/src/agent-tools.ts |
+| `plugin_dictionary_retrieve_saved_vocabulary` | [EXT09](#EXT09) [AI12](#AI12) [READ07](#READ07) [LIB01](#LIB01) | [代码] global/book；插件启用后才进入工具集；来源 plugins/dictionary/src/agent-tools.ts |
+| `plugin_dictionary_lookup_word` | [EXT09](#EXT09) [AI12](#AI12) [READ07](#READ07) [LIB01](#LIB01) | [代码] global/book；插件启用后才进入工具集；来源 plugins/dictionary/src/agent-tools.ts |
+| `plugin_dictionary_get_vocabulary` | [EXT09](#EXT09) [AI12](#AI12) [READ07](#READ07) [LIB01](#LIB01) | [代码] global/book；插件启用后才进入工具集；来源 plugins/dictionary/src/agent-tools.ts |
+| `plugin_dictionary_save_word` | [EXT09](#EXT09) [AI12](#AI12) [READ07](#READ07) [LIB01](#LIB01) | [代码] global/book；插件启用后才进入工具集；来源 plugins/dictionary/src/agent-tools.ts |
+| `plugin_jumper_list_bookmarks` | [TXT02](#TXT02) [TXT07](#TXT07) [READ01](#READ01) [READ05](#READ05) [READ06](#READ06) [READ07](#READ07) [READ13](#READ13) [EXT02](#EXT02) [SYS02](#SYS02) [AI05](#AI05) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/jumper/src/bookmark-tools.ts |
+| `plugin_jumper_inspect_bookmark_location` | [TXT02](#TXT02) [TXT07](#TXT07) [READ01](#READ01) [READ05](#READ05) [READ06](#READ06) [READ07](#READ07) [READ13](#READ13) [EXT02](#EXT02) [SYS02](#SYS02) [AI05](#AI05) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/jumper/src/bookmark-tools.ts |
+| `plugin_jumper_save_bookmark` | [TXT02](#TXT02) [TXT07](#TXT07) [READ01](#READ01) [READ05](#READ05) [READ06](#READ06) [READ07](#READ07) [READ13](#READ13) [EXT02](#EXT02) [SYS02](#SYS02) [AI05](#AI05) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/jumper/src/bookmark-tools.ts |
+| `plugin_jumper_manage_bookmark` | [TXT02](#TXT02) [TXT07](#TXT07) [READ01](#READ01) [READ05](#READ05) [READ06](#READ06) [READ07](#READ07) [READ13](#READ13) [EXT02](#EXT02) [SYS02](#SYS02) [AI05](#AI05) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/jumper/src/bookmark-tools.ts |
+| `plugin_rss_reader_storage_policy` | [EXT10](#EXT10) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/rss-reader/src/agent-tools.ts |
+| `plugin_rss_reader_import_opml` | [EXT10](#EXT10) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/rss-reader/src/agent-tools.ts |
+| `plugin_rss_reader_unsubscribe_feed` | [EXT10](#EXT10) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/rss-reader/src/agent-tools.ts |
+| `plugin_rss_reader_list_feeds` | [EXT10](#EXT10) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/rss-reader/src/agent-tools.ts |
+| `plugin_rss_reader_subscribe_feed` | [EXT10](#EXT10) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/rss-reader/src/agent-tools.ts |
+| `plugin_rss_reader_refresh_feed` | [EXT10](#EXT10) | [代码] 仅 global；插件启用后才进入工具集；来源 plugins/rss-reader/src/agent-tools.ts |
 
 ### Native bundled plugin
 

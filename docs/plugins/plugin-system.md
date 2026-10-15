@@ -6593,7 +6593,7 @@ user configuration.
 
 ## 13. First-Party Coverage
 
-The ten source plugins use the registry-backed contract (four capability-matrix
+Source plugins in this checkout use the registry-backed contract (four capability-matrix
 consumer fixtures were removed on 2026-09-15; Listening Desk was removed on
 2026-09-16). Rust currently bundles six; source presence is not installation or
 enablement. Theme Schedule is in the adjacent distribution repository, not an
@@ -6608,6 +6608,7 @@ additional source plugin in this checkout:
 | Text to Speech | voice/options providers, storage, secrets, network, settings schema |
 | Theme Schedule | Settings domain, options/commands, storage/UI, committed schedule, settings schema |
 | WebDAV Sync | sync transport, storage, secrets, network, settings schema |
+| Annotation Sync | settings secret, shelf page, WeChat Reading network import, NeoReader file import, fuzzy quote matching, agent context, retrieval, and list tool. Not bundled. See `plugins/annotation-sync/README.md` |
 | Jumper | one go-to box (views 1.12 plugin-computed search) answering chapters, printed pages via `listNavigationTargets` and a cancellable live precise text search, shared locations with back/forward history, named bookmarks with list pagination and global bookmark tools |
 
 The host never switches on these plugin IDs. Product-specific behavior belongs

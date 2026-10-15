@@ -1,0 +1,51 @@
+{
+  "id": "annotation-sync",
+  "name": "Annotation Sync",
+  "version": "0.1.0",
+  "schemaVersion": 1,
+  "minAppVersion": "0.6.7",
+  "requires": {
+    "domains": { "library": "^1.14.0" },
+    "contributions": {
+      "headerActions": "^1.0.0",
+      "commands": "^1.0.0",
+      "agentTools": "^1.2.0",
+      "agentContextProviders": "^1.0.0",
+      "agentRetrievalProviders": "^1.0.0"
+    },
+    "services": {
+      "storage": "^2.3.0",
+      "secrets": "^1.0.0",
+      "network": "^2.2.0",
+      "ui": "^1.0.0",
+      "resources": "^1.4.0"
+    },
+    "schemas": { "views": "^1.2.0", "settings": "^1.0.0" }
+  },
+  "description": "Import WeChat Reading highlights and NeoReader annotation exports so the desktop agent can use them as context. Quotes are matched fuzzily; a different edition stays readable even when it cannot be anchored.",
+  "author": "ReadAware",
+  "permissions": ["library:read", "service:network", "agent:tools", "agent:context", "agent:retrieval"],
+  "main": "main.js",
+  "networkAccess": { "origins": ["https://i.weread.qq.com"] },
+  "settings": [
+    {
+      "kind": "secret",
+      "id": "api-key",
+      "label": {
+        "default": "WeChat Reading API key",
+        "translations": {
+          "zh-Hans": "微信读书 API Key",
+          "zh-Hant": "微信讀書 API Key"
+        }
+      },
+      "placeholder": "wrk-…",
+      "helperText": {
+        "default": "Create a key at https://weread.qq.com/r/weread-skills. It looks like wrk-… and is stored in this plugin's encrypted secret store. Then open Annotation Sync to sync one book.",
+        "translations": {
+          "zh-Hans": "在 https://weread.qq.com/r/weread-skills 创建密钥，形如 wrk-…，只保存在本插件的加密密钥库。然后打开 Annotation Sync 同步一本书。",
+          "zh-Hant": "在 https://weread.qq.com/r/weread-skills 建立金鑰，形如 wrk-…，只保存在本外掛的加密金鑰庫。然後開啟 Annotation Sync 同步一本書。"
+        }
+      }
+    }
+  ]
+}

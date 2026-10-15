@@ -901,6 +901,7 @@ export function collectInventory(): Inventory[] {
     ["sentence-reader", "READ15 READ16"],
     ["tts", "READ17 READ18"],
     ["webdav-sync", "OPS04"],
+    ["annotation-sync", "AI08 AI10 AI11 AI12 SYS04 CFG09 LIB01 TXT02 SYS11"],
     ["jumper", "TXT02 TXT07 READ06 EXT02"],
   ]);
   // 2026-09-16 rewrites: Jumper dropped its separate navigation module. 2026-09-19: Workspace Profiles was removed outright; 2026-09-21: Reading Goals and Annotations followed (evidence only in Git history).
