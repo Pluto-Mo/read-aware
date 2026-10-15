@@ -2363,7 +2363,7 @@ groups.push(
         actor("自动", "plugin context provider 注入线程", "受预算/来源约束消费"),
         actor("接通", "agentContextProviders.register", "上下文贡献"),
         ["EXTOOLS", "THREAD", "API"],
-        "无第一方插件消费者（Reading Goals 于 2026-09-21 移除；曾按请求书籍 scope 提供阅读目标）",
+        "Annotation Sync 按当前书注入已导入摘录（Reading Goals 于 2026-09-21 移除；曾按请求书籍 scope 提供阅读目标）",
         "真实 Worker 到受控推理服务已验；此前没有专属目标编辑工具；0.4接线如下，不等于任意上下文语义已验收 Reading Goals0.4新增双scope get/set/clear_reading_goal，写入经宿主确认并比较所见revision；UI共用goals文档条件写，下一轮上下文/候选读取同一数据。schema2首次按书提升旧KV，文档/空目标墓碑优先，旧KV清理失败拒绝并可重试。新增agent:tools，沿用Storage2.1而非新宿主API；新协议原生升级/批准/持久化与模型组合待集中验收，不等于直接写入或删除已提升记忆。",
       ),
       cap(
@@ -2373,7 +2373,7 @@ groups.push(
         actor("扩展", "自动生成 retrieve 工具", "按需有界检索工具"),
         actor("接通", "agentRetrievalProviders.register", "检索贡献"),
         ["EXTOOLS", "DICTTOOLS", "REGISTRY"],
-        "Dictionary saved-vocabulary",
+        "Dictionary saved-vocabulary；Annotation Sync imported-annotations",
         "名称隔离/限量由 adapter 控制；查询结果不是可信指令",
       ),
     ],
